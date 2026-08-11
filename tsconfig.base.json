@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true,
+    "declaration": false,
+    "noEmit": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@sbgg/core": ["packages/core/src/index.ts"],
+      "@sbgg/core/*": ["packages/core/src/*"],
+      "@sbgg/db": ["packages/db/src/index.ts"],
+      "@sbgg/db/*": ["packages/db/src/*"],
+      "@sbgg/ui": ["packages/ui/src/index.ts"],
+      "@sbgg/ui/*": ["packages/ui/src/*"],
+      "@sbgg/sports": ["packages/sports/src/index.ts"],
+      "@sbgg/sports/*": ["packages/sports/src/*"],
+      "@sbgg/odds": ["packages/odds/src/index.ts"],
+      "@sbgg/odds/*": ["packages/odds/src/*"],
+      "@sbgg/gamification": ["packages/gamification/src/index.ts"],
+      "@sbgg/gamification/*": ["packages/gamification/src/*"],
+      "@sbgg/affiliate": ["packages/affiliate/src/index.ts"],
+      "@sbgg/affiliate/*": ["packages/affiliate/src/*"],
+      "@sbgg/seo": ["packages/seo/src/index.ts"],
+      "@sbgg/seo/*": ["packages/seo/src/*"],
+      "@sbgg/analytics": ["packages/analytics/src/index.ts"],
+      "@sbgg/analytics/*": ["packages/analytics/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "**/node_modules", "**/dist", "**/.next"]
+}

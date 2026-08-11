@@ -1,0 +1,28 @@
+{
+  "name": "@sbgg/worker",
+  "version": "2.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@sbgg/affiliate": "workspace:*",
+    "@sbgg/core": "workspace:*",
+    "@sbgg/db": "workspace:*",
+    "@sbgg/gamification": "workspace:*",
+    "@sbgg/odds": "workspace:*",
+    "@sbgg/seo": "workspace:*",
+    "@sbgg/sports": "workspace:*",
+    "tsx": "^4.19.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7",
+    "@types/node": "^20.19.0"
+  }
+}

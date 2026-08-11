@@ -1,0 +1,13 @@
+keyword_or_topic,measurement_status,intent,target_url,canonical_owner
+NFL predictions,unmeasured,informational-community,/nfl/predictions,/nfl/predictions
+NFL picks,unmeasured,informational-community,/nfl/predictions,/nfl/predictions
+NFL odds,unmeasured,commercial-investigation,/nfl/odds,/nfl/odds
+NFL schedule,unmeasured,informational,/nfl/schedule,/nfl/schedule
+NFL scores,unmeasured,informational-fresh,/nfl/scores,/nfl/scores
+NFL standings,unmeasured,informational,/nfl/standings,/nfl/standings
+NFL injuries,unmeasured,informational-fresh,/nfl/injuries,/nfl/injuries
+NFL player stats,unmeasured,informational,/nfl/stats,/nfl/stats
+Super Bowl predictions,unmeasured,informational-community,/super-bowl/predictions,/super-bowl/predictions
+Super Bowl odds,unmeasured,commercial-investigation,/super-bowl/odds,/super-bowl/odds
+Super Bowl history,unmeasured,informational-evergreen,/super-bowl/history,/super-bowl/history
+Super Bowl winners,unmeasured,informational-evergreen,/super-bowl/winners,/super-bowl/winners

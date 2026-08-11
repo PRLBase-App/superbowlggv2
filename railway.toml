@@ -1,0 +1,15 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+watchPatterns = [
+  "/apps/**",
+  "/packages/**",
+  "/package.json",
+  "/pnpm-lock.yaml",
+  "/pnpm-workspace.yaml",
+  "/Dockerfile",
+  "/railway.toml"
+]
+
+[deploy]
+preDeployCommand = "pnpm --filter @sbgg/db deploy && pnpm --filter @sbgg/db seed"

@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env.production
+.env.*.local
+.railway/
+
+# testing
+coverage/
+playwright-report/
+test-results/
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# data artifacts (large generated SEO datasets stay out of git; regenerate via pnpm seo:research)
+data/seo/*.csv
+data/seo/*.json
+!data/seo/.gitkeep
+!data/seo/current-url-inventory.csv
+!data/seo/current-url-inventory.json
+!data/seo/keyword-map.csv
+!data/seo/redirect-map.csv
+!data/seo/semrush-existing-rankings.csv
+!data/seo/semrush-existing-rankings.json
+!data/seo/semrush-opportunities.csv

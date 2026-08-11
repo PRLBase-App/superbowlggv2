@@ -1,0 +1,4 @@
+url,status,content_type,title,canonical,indexability,finding,observed_at
+https://superbowl.gg/,404,application/json,,,unavailable,Railway fallback: Application not found,2026-08-11T02:22:54Z
+https://superbowl.gg/robots.txt,200,text/plain,,,n/a,Cloudflare-managed robots content; no sitemap directive observed,2026-08-11T02:22:54Z
+https://superbowl.gg/sitemap.xml,404,application/json,,,unavailable,Railway fallback: Application not found,2026-08-11T02:22:54Z

@@ -1,0 +1,45 @@
+{
+  "name": "@sbgg/web",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p ${PORT:-3000}",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "seo:research": "tsx src/scripts/seo-research.ts"
+  },
+  "dependencies": {
+    "@sbgg/affiliate": "workspace:*",
+    "@sbgg/auth": "workspace:*",
+    "@sbgg/core": "workspace:*",
+    "@sbgg/db": "workspace:*",
+    "@sbgg/gamification": "workspace:*",
+    "@sbgg/odds": "workspace:*",
+    "@sbgg/seo": "workspace:*",
+    "@sbgg/sports": "workspace:*",
+    "better-auth": "^1.6.26",
+    "next": "15.5.22",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@prisma/nextjs-monorepo-workaround-plugin": "6.19.3",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^20.19.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "eslint": "^9",
+    "eslint-config-next": "15",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "playwright": "^1.62.1",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

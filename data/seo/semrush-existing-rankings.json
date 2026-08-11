@@ -1,0 +1,10 @@
+{
+  "capturedAt": "2026-08-11T00:00:00Z",
+  "domain": "superbowl.gg",
+  "database": "us",
+  "source": "semrush-mcp",
+  "complete": false,
+  "error": "NO_API_UNITS",
+  "message": "Authentication succeeded, but the subscription has no API units. No ranking report was executed.",
+  "rankings": []
+}

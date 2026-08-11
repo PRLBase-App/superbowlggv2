@@ -1,0 +1,22 @@
+source_path,target_path,status,reason
+/nfl/games,/games,301,canonical consolidation
+/nfl/picks,/nfl/predictions,301,canonical consolidation
+/nfl/playoff-picture,/nfl/playoffs,301,canonical consolidation
+/nfl/teams/:slug/predictions,/nfl/teams/:slug,301,thin alias consolidation
+/nfl/teams/:slug/stats,/nfl/teams/:slug,301,thin alias consolidation
+/nfl/players/:slug/game-log,/nfl/players/:slug,301,thin alias consolidation
+/nfl/week/:week/odds,/nfl/week/:week,301,thin alias consolidation
+/nfl/week/:week/schedule,/nfl/week/:week,301,thin alias consolidation
+/rewards,/marketplace,301,canonical consolidation
+/admin/sports-data,/admin/games,301,admin consolidation
+/admin/providers,/admin/games,301,admin consolidation
+/admin/bookmakers,/admin/affiliate,301,admin consolidation
+/admin/affiliate-clicks,/admin/affiliate,301,admin consolidation
+/admin/conversions,/admin/affiliate,301,admin consolidation
+/admin/affiliate-offers,/admin/affiliate,301,admin consolidation
+/admin/affiliate-partners,/admin/affiliate,301,admin consolidation
+/admin/achievements,/admin/gamification,301,admin consolidation
+/admin/rewards,/admin/gamification,301,admin consolidation
+/admin/notifications,/admin/settings,301,admin consolidation
+/admin/moderation,/admin/predictions,301,admin consolidation
+/admin/seo/:section,/admin/seo,301,admin consolidation

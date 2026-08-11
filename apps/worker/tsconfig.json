@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "paths": {
+      "@sbgg/core": ["../../packages/core/src/index.ts"],
+      "@sbgg/db": ["../../packages/db/src/index.ts"],
+      "@sbgg/sports": ["../../packages/sports/src/index.ts"],
+      "@sbgg/odds": ["../../packages/odds/src/index.ts"],
+      "@sbgg/gamification": ["../../packages/gamification/src/index.ts"],
+      "@sbgg/affiliate": ["../../packages/affiliate/src/index.ts"],
+      "@sbgg/seo": ["../../packages/seo/src/index.ts"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

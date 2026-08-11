@@ -1,0 +1,25 @@
+{
+  "name": "superbowlggv2",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Superbowl.gg — American Football prediction, analytics, community, gamification, affiliate & SEO platform",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @sbgg/web dev",
+    "dev:worker": "pnpm --filter @sbgg/worker dev",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "test:unit": "pnpm -r test:unit",
+    "db:generate": "pnpm --filter @sbgg/db generate",
+    "db:migrate": "pnpm --filter @sbgg/db migrate",
+    "db:seed": "pnpm --filter @sbgg/db seed",
+    "seo:research": "pnpm --filter @sbgg/web seo:research",
+    "worker:start": "pnpm --filter @sbgg/worker start"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.15.9"
+}

@@ -1,0 +1,1344 @@
+// Superbowl.gg — Prisma schema (PostgreSQL)
+// Auth tables follow Better Auth's Prisma adapter contract.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  MODERATOR
+  EDITOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  PENDING_VERIFICATION
+}
+
+enum LeagueSlug {
+  NFL
+  NCAAF
+  UFL
+  CFL
+}
+
+enum SeasonType {
+  REGULAR
+  POST
+  PRE
+}
+
+enum GameStatus {
+  SCHEDULED
+  LIVE
+  FINAL
+  POSTPONED
+  CANCELLED
+  SUSPENDED
+}
+
+enum PredictionMarket {
+  MONEYLINE
+  SPREAD
+  TOTAL
+  PLAYER_PROP
+}
+
+enum PredictionStatus {
+  PENDING
+  LOCKED
+  SETTLED
+  VOIDED
+}
+
+enum SettlementResult {
+  WIN
+  LOSS
+  PUSH
+  VOID
+}
+
+enum Confidence {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum WalletTransactionType {
+  REWARD
+  ACHIEVEMENT
+  STREAK
+  REFERRAL
+  MARKETPLACE_PURCHASE
+  ADMIN_ADJUSTMENT
+  SIGNUP_BONUS
+}
+
+enum NotificationType {
+  NEW_FOLLOWER
+  FOLLOWED_USER_PREDICTION
+  PREDICTION_SETTLED
+  ACHIEVEMENT_UNLOCKED
+  STREAK_REWARD
+  REFERRAL_REWARD
+  MARKETPLACE_PURCHASE
+  SYSTEM
+}
+
+enum AffiliateOfferCategory {
+  SPORTSBOOK
+  PARTNER_DEAL
+  PROMO_CODE
+  DIGITAL_REWARD
+  MERCHANDISE
+}
+
+enum OfferStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  EXPIRED
+  ARCHIVED
+}
+
+enum AdPlacementKey {
+  HOME
+  GAME_PAGE
+  PREDICTION_FEED
+  LEADERBOARD
+  MARKETPLACE
+}
+
+enum AdStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum SyncJobType {
+  SYNC_SCHEDULE
+  SYNC_TEAMS
+  SYNC_PLAYERS
+  SYNC_STANDINGS
+  SYNC_INJURIES
+  SYNC_ODDS
+  SYNC_LIVE_GAMES
+  SETTLE_PREDICTIONS
+  PROCESS_GAMIFICATION
+  SEND_NOTIFICATIONS
+  SEO_REFRESH_EXISTING_RANKINGS
+  SEO_RESEARCH_KEYWORDS
+  SEO_TECHNICAL_AUDIT
+}
+
+enum SyncJobStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum SeoKeywordPriority {
+  P0
+  P1
+  P2
+  P3
+  P4
+  P5
+}
+
+enum SeoIntent {
+  NAVIGATIONAL
+  INFORMATIONAL
+  COMMERCIAL
+  TRANSACTIONAL
+  LIVE_EVENT
+  STATISTICAL
+  PREDICTION
+  HISTORICAL
+  TEAM
+  PLAYER
+  GAME
+  SCHEDULE
+  SCORE
+  ODDS
+}
+
+enum SeoOpportunityStatus {
+  NEW
+  PLANNED
+  ACTIVE
+  DONE
+  SKIPPED
+}
+
+enum SeoRedirectType {
+  KEEP
+  REDIRECT_301
+  REMOVE
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUTH (Better Auth)
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String     @unique
+  emailVerified Boolean    @default(false)
+  image         String?
+  passwordHash  String?
+  role          UserRole   @default(USER)
+  status        UserStatus @default(PENDING_VERIFICATION)
+  isAdmin       Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  sessions        Session[]
+  accounts        Account[]
+  profile         Profile?
+  followers       UserFollow[]            @relation("Following")
+  following       UserFollow[]            @relation("Follower")
+  favoriteTeams   UserFavoriteTeam[]
+  predictions     Prediction[]
+  wallet          Wallet?
+  gamification    GamificationEvent[]
+  xp              UserXP?
+  achievements    UserAchievement[]
+  streak          DailyStreak?
+  referralCode    Referral?               @relation("ReferralOwner")
+  referralsMade   ReferralEvent[]         @relation("ReferralMade")
+  notifications   Notification[]
+  notifPrefs      NotificationPreference?
+  affiliateClicks AffiliateClick[]
+  adClicks        AdClick[]
+  redemptions     MarketplaceRedemption[]
+  auditLogs       AdminAuditLog[]
+  analytics       AnalyticsEvent[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([providerId, accountId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([identifier])
+}
+
+// ─────────────────────────────────────────────────────────────
+// PROFILE / SOCIAL
+// ─────────────────────────────────────────────────────────────
+
+model Profile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  username     String   @unique
+  displayName  String?
+  bio          String?
+  avatarUrl    String?
+  location     String?
+  timezone     String   @default("America/New_York")
+  referralCode String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([username])
+}
+
+model UserFollow {
+  id                 String   @id @default(cuid())
+  followerId         String
+  followingId        String
+  notifyOnPrediction Boolean  @default(true)
+  createdAt          DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+model UserFavoriteTeam {
+  id        String   @id @default(cuid())
+  userId    String
+  teamId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+  @@index([teamId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// SPORTS DOMAIN
+// ─────────────────────────────────────────────────────────────
+
+model League {
+  id        String     @id @default(cuid())
+  slug      LeagueSlug @unique
+  name      String
+  shortName String
+  country   String     @default("US")
+  active    Boolean    @default(true)
+  sortOrder Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  seasons     Season[]
+  teams       Team[]
+  games       Game[]
+  standings   Standing[]
+  players     Player[]
+  gameStats   GameTeamStats[]
+  playerStats PlayerGameStats[]
+}
+
+model Season {
+  id               String   @id @default(cuid())
+  leagueId         String
+  year             Int
+  name             String
+  startDate        DateTime
+  endDate          DateTime
+  currentWeek      Int      @default(1)
+  status           String   @default("PRE")
+  isCurrent        Boolean  @default(false)
+  providerCoverage Json?
+  createdAt        DateTime @default(now())
+
+  league    League     @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  games     Game[]
+  standings Standing[]
+
+  @@unique([leagueId, year])
+  @@index([leagueId])
+}
+
+model Team {
+  id             String   @id @default(cuid())
+  leagueId       String
+  slug           String   @unique
+  name           String
+  shortName      String
+  abbreviation   String
+  city           String?
+  stadium        String?
+  conference     String?
+  division       String?
+  primaryColor   String?
+  secondaryColor String?
+  logoUrl        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  league    League             @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  homeGames Game[]             @relation("HomeTeam")
+  awayGames Game[]             @relation("AwayTeam")
+  players   Player[]
+  standings Standing[]
+  favorites UserFavoriteTeam[]
+  gameStats GameTeamStats[]
+
+  @@index([leagueId])
+  @@index([slug])
+}
+
+model Player {
+  id           String    @id @default(cuid())
+  teamId       String?
+  leagueId     String
+  slug         String    @unique
+  name         String
+  firstName    String?
+  lastName     String?
+  position     String?
+  jerseyNumber Int?
+  height       String?
+  weight       Int?
+  birthDate    DateTime?
+  college      String?
+  headshotUrl  String?
+  status       String? // ACT, IR, OUT, DOUBTFUL, QUESTIONABLE, PUP, NFI
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  team        Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  league      League            @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  gameStats   PlayerGameStats[]
+  injuries    Injury[]
+  predictions Prediction[]
+
+  @@index([teamId])
+  @@index([leagueId])
+  @@index([position])
+}
+
+model Game {
+  id                String     @id @default(cuid())
+  leagueId          String
+  seasonId          String
+  week              Int
+  seasonType        SeasonType @default(REGULAR)
+  homeTeamId        String
+  awayTeamId        String
+  scheduledAt       DateTime
+  status            GameStatus @default(SCHEDULED)
+  homeScore         Int        @default(0)
+  awayScore         Int        @default(0)
+  quarter           Int?
+  clock             String?
+  venue             String?
+  broadcast         String?
+  stage             String?
+  providerUpdatedAt DateTime?
+  neutralSite       Boolean    @default(false)
+  createdBy         String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  league      League                  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  season      Season                  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  homeTeam    Team                    @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Cascade)
+  awayTeam    Team                    @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Cascade)
+  standings   Standing[]
+  odds        OddsSnapshot[]
+  markets     Market[]
+  predictions Prediction[]
+  teamStats   GameTeamStats[]
+  playerStats PlayerGameStats[]
+  providerMap ProviderEntityMapping[]
+  injuries    Injury[]
+  events      GameEvent[]
+
+  @@index([leagueId, status])
+  @@index([scheduledAt])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@index([seasonId, week])
+}
+
+model GameEvent {
+  id               String    @id @default(cuid())
+  gameId           String
+  provider         String
+  providerEventKey String
+  quarter          String?
+  clock            String?
+  teamId           String?
+  playerId         String?
+  type             String
+  description      String?
+  homeScore        Int?
+  awayScore        Int?
+  occurredAt       DateTime?
+  createdAt        DateTime  @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerEventKey])
+  @@index([gameId, createdAt])
+}
+
+model Standing {
+  id             String   @id @default(cuid())
+  leagueId       String
+  seasonId       String
+  teamId         String
+  wins           Int      @default(0)
+  losses         Int      @default(0)
+  ties           Int      @default(0)
+  pointsFor      Int      @default(0)
+  pointsAgainst  Int      @default(0)
+  divisionRank   Int?
+  conferenceRank Int?
+  streak         String?
+  lastUpdated    DateTime @default(now())
+
+  league League  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  season Season  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  team   Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  game   Game?   @relation(fields: [gameId], references: [id], onDelete: SetNull)
+  gameId String?
+
+  @@unique([leagueId, seasonId, teamId])
+  @@index([seasonId])
+}
+
+model GameTeamStats {
+  id               String  @id @default(cuid())
+  gameId           String
+  teamId           String
+  leagueId         String
+  isHome           Boolean
+  totalYards       Int?
+  passYards        Int?
+  rushYards        Int?
+  turnovers        Int?
+  firstDowns       Int?
+  penalties        Int?
+  penaltyYards     Int?
+  timeOfPossession Int?
+  thirdDownConv    String?
+
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, teamId])
+  @@index([teamId])
+}
+
+model PlayerGameStats {
+  id             String  @id @default(cuid())
+  gameId         String
+  playerId       String
+  teamId         String?
+  leagueId       String
+  passingYards   Int?
+  passingTds     Int?
+  interceptions  Int?
+  rushingYards   Int?
+  rushingTds     Int?
+  receptions     Int?
+  receivingYards Int?
+  receivingTds   Int?
+  fumblesLost    Int?
+  tackles        Int?
+  sacks          Float?
+  fantasyPoints  Float?
+
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, playerId])
+  @@index([playerId])
+  @@index([gameId])
+}
+
+model Injury {
+  id          String   @id @default(cuid())
+  playerId    String
+  teamId      String?
+  leagueId    String
+  gameId      String?
+  status      String // OUT, QUESTIONABLE, DOUBTFUL, IR, PUP
+  bodyPart    String?
+  description String?
+  reportedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  game   Game?  @relation(fields: [gameId], references: [id], onDelete: SetNull)
+
+  @@index([playerId])
+  @@index([gameId])
+}
+
+model ProviderEntityMapping {
+  id         String   @id @default(cuid())
+  provider   String
+  entityType String // TEAM | PLAYER | GAME | LEAGUE | SEASON
+  providerId String
+  entityId   String
+  gameId     String?
+  createdAt  DateTime @default(now())
+
+  game Game? @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, entityType, providerId])
+  @@index([entityId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// ODDS
+// ─────────────────────────────────────────────────────────────
+
+model Bookmaker {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  name      String
+  logoUrl   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  odds    OddsSnapshot[]
+  markets Market[]
+}
+
+model Market {
+  id          String   @id @default(cuid())
+  gameId      String
+  bookmakerId String?
+  key         String // h2h | spreads | totals | player_props
+  name        String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  game      Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  bookmaker Bookmaker?      @relation(fields: [bookmakerId], references: [id], onDelete: SetNull)
+  outcomes  MarketOutcome[]
+  snapshots OddsSnapshot[]
+
+  @@unique([gameId, bookmakerId, key])
+  @@index([gameId])
+}
+
+model MarketOutcome {
+  id                 String   @id @default(cuid())
+  marketId           String
+  providerOutcomeKey String?
+  name               String
+  price              Float
+  point              Float?
+  description        String?
+  lastUpdated        DateTime @default(now())
+
+  market Market @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@unique([marketId, providerOutcomeKey])
+  @@index([marketId])
+}
+
+model OddsSnapshot {
+  id          String   @id @default(cuid())
+  gameId      String
+  bookmakerId String
+  marketKey   String
+  outcomeKey  String?
+  outcome     String
+  price       Float
+  line        Float?
+  capturedAt  DateTime @default(now())
+
+  game      Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  bookmaker Bookmaker @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+  market    Market?   @relation(fields: [marketId], references: [id], onDelete: SetNull)
+  marketId  String?
+
+  @@index([gameId, marketKey, capturedAt])
+  @@index([marketId, outcomeKey, capturedAt])
+  @@index([bookmakerId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// PREDICTIONS
+// ─────────────────────────────────────────────────────────────
+
+model Prediction {
+  id                  String            @id @default(cuid())
+  clientRequestId     String?           @unique
+  userId              String
+  gameId              String
+  playerId            String? // for PLAYER_PROP
+  marketType          PredictionMarket
+  marketKey           String // h2h_home | h2h_away | spread_home | spread_away | total_over | total_under | prop_*
+  selection           String
+  line                Float?
+  oddsAtCreation      Float
+  marketOutcomeId     String?
+  oddsSnapshotId      String?
+  bookmakerKey        String?
+  oddsProvider        String?
+  oddsCapturedAt      DateTime?
+  sportsbookReference String?
+  confidence          Confidence
+  analysis            String?
+  virtualUnits        Float             @default(1)
+  status              PredictionStatus  @default(PENDING)
+  result              SettlementResult?
+  isPublic            Boolean           @default(true)
+  publishedAt         DateTime          @default(now())
+  lockedAt            DateTime?
+  settledAt           DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game       Game                  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player     Player?               @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  settlement PredictionSettlement?
+  views      Int                   @default(0)
+  likes      Int                   @default(0)
+
+  @@index([userId])
+  @@index([gameId])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([marketType])
+  @@index([oddsSnapshotId])
+}
+
+model PredictionSettlement {
+  id                String           @id @default(cuid())
+  predictionId      String           @unique
+  result            SettlementResult
+  settlementReason  String
+  settlementSource  String
+  settlementVersion Int              @default(1)
+  settledAt         DateTime         @default(now())
+
+  prediction Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────
+// WALLET / GAMIFICATION
+// ─────────────────────────────────────────────────────────────
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id           String                @id @default(cuid())
+  walletId     String
+  type         WalletTransactionType
+  amount       Float // positive = credit, negative = debit
+  balanceAfter Float
+  description  String
+  refType      String?
+  refId        String?
+  createdAt    DateTime              @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@unique([walletId, refType, refId])
+  @@index([walletId, createdAt])
+}
+
+model GamificationEvent {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String // USER_REGISTERED, PREDICTION_CREATED, PREDICTION_WON, ...
+  xpAwarded    Int      @default(0)
+  coinsAwarded Float    @default(0)
+  metadata     Json?
+  refType      String?
+  refId        String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, refType, refId])
+  @@index([userId, createdAt])
+}
+
+model UserXP {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  totalXp      Int      @default(0)
+  currentLevel Int      @default(1)
+  levelTitle   String   @default("Rookie")
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Level {
+  id    String  @id @default(cuid())
+  level Int     @unique
+  title String
+  minXp Int
+  color String?
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  title       String
+  description String
+  icon        String?
+  xpReward    Int      @default(0)
+  coinReward  Float    @default(0)
+  criteria    Json? // {type: "count", event: "PREDICTION_WON", threshold: 10}
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([achievementId])
+}
+
+model DailyStreak {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  currentStreak    Int       @default(0)
+  longestStreak    Int       @default(0)
+  lastActivityDate DateTime?
+  updatedAt        DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Referral {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  code      String   @unique
+  clicks    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  owner  User            @relation("ReferralOwner", fields: [userId], references: [id], onDelete: Cascade)
+  events ReferralEvent[]
+}
+
+model ReferralEvent {
+  id             String   @id @default(cuid())
+  referralId     String
+  referredUserId String
+  type           String // CLICK | SIGNUP | EMAIL_VERIFIED | ACTIVATED
+  rewardPaid     Boolean  @default(false)
+  rewardCoins    Float    @default(0)
+  createdAt      DateTime @default(now())
+
+  referral Referral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  referred User     @relation("ReferralMade", fields: [referredUserId], references: [id], onDelete: Cascade)
+
+  @@unique([referralId, referredUserId, type])
+  @@index([referredUserId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  link      String?
+  dedupeKey String?          @unique
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+model NotificationPreference {
+  id                     String  @id @default(cuid())
+  userId                 String  @unique
+  newFollower            Boolean @default(true)
+  followedUserPrediction Boolean @default(true)
+  predictionSettled      Boolean @default(true)
+  achievementUnlocked    Boolean @default(true)
+  streakReward           Boolean @default(true)
+  referralReward         Boolean @default(true)
+  marketplace            Boolean @default(true)
+  system                 Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────
+// AFFILIATE / MARKETPLACE / ADS
+// ─────────────────────────────────────────────────────────────
+
+model AffiliatePartner {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  website     String?
+  logoUrl     String?
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  offers     AffiliateOffer[]
+  placements AffiliatePlacement[]
+  clicks     AffiliateClick[]
+}
+
+model AffiliateOffer {
+  id              String                 @id @default(cuid())
+  partnerId       String
+  slug            String                 @unique
+  title           String
+  description     String?
+  imageUrl        String?
+  category        AffiliateOfferCategory
+  coinPrice       Float?
+  promoCode       String?
+  destinationUrl  String
+  startAt         DateTime?
+  endAt           DateTime?
+  inventory       Int?
+  geoRestrictions String? // JSON: {allowed: [], blocked: []}
+  minimumAge      Int?
+  status          OfferStatus            @default(DRAFT)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  partner    AffiliatePartner     @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  placements AffiliatePlacement[]
+  clicks     AffiliateClick[]
+}
+
+model AffiliatePlacement {
+  id        String  @id @default(cuid())
+  partnerId String?
+  offerId   String?
+  key       String // home_hero | game_sidebar | feed_inline | market_grid | footer
+  label     String?
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  partner AffiliatePartner? @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  offer   AffiliateOffer?   @relation(fields: [offerId], references: [id], onDelete: SetNull)
+}
+
+model AffiliateClick {
+  id           String   @id @default(cuid())
+  offerId      String?
+  partnerId    String?
+  userId       String?
+  sessionId    String?
+  campaign     String?
+  country      String?
+  device       String?
+  referrer     String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  placementKey String?
+  createdAt    DateTime @default(now())
+
+  offer   AffiliateOffer?   @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  partner AffiliatePartner? @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  user    User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([offerId])
+  @@index([createdAt])
+}
+
+model AffiliateConversion {
+  id          String   @id @default(cuid())
+  clickId     String?
+  offerId     String?
+  partnerId   String?
+  userId      String?
+  status      String   @default("PENDING") // PENDING | CONFIRMED | REJECTED
+  amount      Float?
+  currency    String   @default("USD")
+  source      String   @default("MANUAL") // WEBHOOK | CSV | MANUAL
+  externalRef String?  @unique
+  convertedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([offerId])
+  @@index([status])
+}
+
+model AdCampaign {
+  id         String    @id @default(cuid())
+  name       String
+  advertiser String
+  budget     Float?
+  startAt    DateTime?
+  endAt      DateTime?
+  status     AdStatus  @default(DRAFT)
+  targeting  Json? // {countries: [], regions: [], leagues: [], devices: []}
+  createdAt  DateTime  @default(now())
+
+  creatives AdCreative[]
+}
+
+model AdCreative {
+  id         String         @id @default(cuid())
+  campaignId String
+  title      String
+  body       String?
+  imageUrl   String?
+  linkUrl    String?
+  placement  AdPlacementKey
+  active     Boolean        @default(true)
+  sortOrder  Int            @default(0)
+
+  campaign    AdCampaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  impressions AdImpression[]
+  clicks      AdClick[]
+}
+
+model AdImpression {
+  id         String         @id @default(cuid())
+  creativeId String
+  placement  AdPlacementKey
+  country    String?
+  createdAt  DateTime       @default(now())
+
+  creative AdCreative @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+
+  @@index([creativeId])
+}
+
+model AdClick {
+  id         String         @id @default(cuid())
+  creativeId String
+  userId     String?
+  placement  AdPlacementKey
+  country    String?
+  createdAt  DateTime       @default(now())
+
+  creative AdCreative @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+  user     User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([creativeId])
+}
+
+model MarketplaceCategory {
+  id        String @id @default(cuid())
+  slug      String @unique
+  name      String
+  sortOrder Int    @default(0)
+
+  offers MarketplaceOffer[]
+}
+
+model MarketplaceOffer {
+  id               String      @id @default(cuid())
+  categoryId       String?
+  affiliateOfferId String?
+  title            String
+  slug             String      @unique
+  description      String?
+  imageUrl         String?
+  partnerName      String?
+  coinPrice        Float
+  promoCode        String?
+  destinationUrl   String?
+  startAt          DateTime?
+  endAt            DateTime?
+  inventory        Int?
+  geoRestrictions  String?
+  minimumAge       Int?
+  status           OfferStatus @default(DRAFT)
+  createdAt        DateTime    @default(now())
+
+  category    MarketplaceCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  redemptions MarketplaceRedemption[]
+}
+
+model MarketplaceRedemption {
+  id         String   @id @default(cuid())
+  userId     String
+  offerId    String
+  coinsSpent Float
+  promoCode  String?
+  status     String   @default("PENDING") // PENDING | FULFILLED | REJECTED
+  createdAt  DateTime @default(now())
+
+  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offer MarketplaceOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, offerId])
+  @@index([userId])
+  @@index([offerId])
+}
+
+model Jurisdiction {
+  id              String  @id @default(cuid())
+  countryCode     String  @unique
+  countryName     String
+  region          String?
+  gamblingAllowed Boolean @default(true)
+  restrictions    String?
+}
+
+// ─────────────────────────────────────────────────────────────
+// ANALYTICS / CONTENT / OPS
+// ─────────────────────────────────────────────────────────────
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  userId     String?
+  event      String
+  page       String?
+  properties Json?
+  sessionId  String?
+  country    String?
+  device     String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([event, createdAt])
+  @@index([page])
+}
+
+model ContentPage {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  metaTitle       String?
+  metaDescription String?
+  body            String
+  published       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  enabled     Boolean  @default(false)
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  group     String   @default("general")
+  updatedAt DateTime @updatedAt
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String
+  entityType String?
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+}
+
+model IntegrationSyncLog {
+  id             String        @id @default(cuid())
+  jobType        SyncJobType
+  status         SyncJobStatus
+  provider       String?
+  startedAt      DateTime      @default(now())
+  finishedAt     DateTime?
+  itemsProcessed Int           @default(0)
+  error          String?
+  metadata       Json?
+}
+
+// ─────────────────────────────────────────────────────────────
+// SEO
+// ─────────────────────────────────────────────────────────────
+
+model SeoKeyword {
+  id              String              @id @default(cuid())
+  keyword         String
+  cluster         String?
+  searchVolume    Int?
+  difficulty      Int?
+  cpc             Float?
+  competition     Float?
+  intent          SeoIntent?
+  currentPosition Int?
+  currentUrl      String?
+  targetUrl       String?
+  priority        SeoKeywordPriority?
+  status          String              @default("NEW")
+  source          String              @default("SEED") // SEED | SEMRUSH | MANUAL
+  relevance       Float               @default(1)
+  productFit      Float               @default(1)
+  freshness       Float               @default(0.5)
+  linkPotential   Float               @default(1)
+  lastRefreshed   DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  snapshots     SeoKeywordSnapshot[]
+  pageLinks     SeoPageKeyword[]
+  opportunities SeoOpportunity[]
+
+  @@unique([keyword])
+  @@index([cluster])
+  @@index([priority])
+}
+
+model SeoKeywordSnapshot {
+  id           String   @id @default(cuid())
+  keywordId    String
+  searchVolume Int?
+  difficulty   Int?
+  cpc          Float?
+  position     Int?
+  traffic      Float?
+  capturedAt   DateTime @default(now())
+
+  keyword SeoKeyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@index([keywordId, capturedAt])
+}
+
+model SeoPage {
+  id              String    @id @default(cuid())
+  path            String    @unique
+  title           String?
+  metaDescription String?
+  h1              String?
+  wordCount       Int?
+  statusCode      Int?
+  indexable       Boolean   @default(true)
+  canonical       String?
+  lastAudited     DateTime?
+  issues          Json?
+  createdAt       DateTime  @default(now())
+
+  keywords SeoPageKeyword[]
+}
+
+model SeoPageKeyword {
+  id        String  @id @default(cuid())
+  pageId    String
+  keywordId String
+  primary   Boolean @default(false)
+
+  page    SeoPage    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  keyword SeoKeyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, keywordId])
+}
+
+model SeoCompetitor {
+  id             String   @id @default(cuid())
+  domain         String
+  overlap        Int?
+  commonKeywords Int?
+  createdAt      DateTime @default(now())
+
+  @@unique([domain])
+}
+
+model SeoOpportunity {
+  id        String               @id @default(cuid())
+  keywordId String               @unique
+  score     Float
+  status    SeoOpportunityStatus @default(NEW)
+  targetUrl String?
+  rationale String?
+  createdAt DateTime             @default(now())
+
+  keyword SeoKeyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@index([status, score])
+}
+
+model SeoRedirect {
+  id               String          @id @default(cuid())
+  oldUrl           String          @unique
+  newUrl           String?
+  type             SeoRedirectType @default(REDIRECT_301)
+  reason           String?
+  existingKeywords String?
+  estimatedValue   Float?
+  createdAt        DateTime        @default(now())
+}
+
+model SeoResearchRun {
+  id            String    @id @default(cuid())
+  runType       String // EXISTING | OPPORTUNITIES | TECHNICAL
+  status        String    @default("RUNNING")
+  keywordsFound Int       @default(0)
+  unitsUsed     Int       @default(0)
+  startedAt     DateTime  @default(now())
+  finishedAt    DateTime?
+  error         String?
+  metadata      Json?
+}
+
+model SeoApiCache {
+  id         String   @id @default(cuid())
+  cacheKey   String   @unique
+  tool       String
+  payload    Json
+  capturedAt DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([expiresAt])
+}

@@ -1,0 +1,188 @@
+import { env } from "@sbgg/core";
+import { Prisma, prisma, type SyncJobType } from "@sbgg/db";
+import { SeoService } from "@sbgg/seo";
+import {
+  processReferrals,
+  sendFollowNotifications,
+  settlePredictions,
+  syncGames,
+  syncInjuries,
+  syncLiveGames,
+  syncOdds,
+  syncPlayers,
+  syncStandings,
+  syncTeams,
+  withLog,
+  type JobResult,
+} from "./jobs";
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+async function isDue(jobType: SyncJobType, intervalMs: number): Promise<boolean> {
+  const latest = await prisma.integrationSyncLog.findFirst({
+    where: { jobType, status: "SUCCESS" },
+    orderBy: { finishedAt: "desc" },
+    select: { finishedAt: true },
+  });
+  return !latest?.finishedAt || Date.now() - latest.finishedAt.getTime() >= intervalMs;
+}
+
+async function execute(name: string, job: () => Promise<JobResult>, results: JobResult[]): Promise<JobResult> {
+  console.info(`[worker] running ${name}`);
+  const result = await job();
+  results.push(result);
+  return result;
+}
+
+async function claimRequestedJob(jobType: SyncJobType): Promise<string | null> {
+  const pending = await prisma.integrationSyncLog.findFirst({
+    where: { jobType, status: "PENDING" },
+    orderBy: { startedAt: "asc" },
+    select: { id: true },
+  });
+  if (!pending) return null;
+  const claim = await prisma.integrationSyncLog.updateMany({
+    where: { id: pending.id, status: "PENDING" },
+    data: { status: "RUNNING", startedAt: new Date() },
+  });
+  return claim.count === 1 ? pending.id : null;
+}
+
+async function runScheduled(
+  jobType: SyncJobType,
+  intervalMs: number,
+  name: string,
+  job: () => Promise<JobResult>,
+  results: JobResult[],
+  force = false,
+): Promise<void> {
+  const requestLogId = await claimRequestedJob(jobType);
+  if (!force && !requestLogId && !await isDue(jobType, intervalMs)) return;
+  const result = await execute(name, job, results);
+  if (requestLogId) {
+    await prisma.integrationSyncLog.update({
+      where: { id: requestLogId },
+      data: {
+        status: result.error ? "FAILED" : "SUCCESS",
+        finishedAt: new Date(),
+        itemsProcessed: result.processed,
+        error: result.error?.slice(0, 2_000),
+      },
+    });
+  }
+}
+
+async function withSeoRun(
+  seo: SeoService,
+  runType: "EXISTING" | "OPPORTUNITIES" | "TECHNICAL",
+  fn: () => Promise<{ processed: number; keywordsFound?: number; metadata?: Record<string, unknown> }>,
+): Promise<JobResult> {
+  const run = await prisma.seoResearchRun.create({ data: { runType, status: "RUNNING" } });
+  const startingUnits = seo.unitsUsed;
+  try {
+    const result = await fn();
+    await prisma.seoResearchRun.update({
+      where: { id: run.id },
+      data: {
+        status: "SUCCESS",
+        keywordsFound: result.keywordsFound ?? 0,
+        unitsUsed: Math.max(0, seo.unitsUsed - startingUnits),
+        ...(result.metadata ? { metadata: result.metadata as Prisma.InputJsonValue } : {}),
+        finishedAt: new Date(),
+      },
+    });
+    return { processed: result.processed };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await prisma.seoResearchRun.update({
+      where: { id: run.id },
+      data: { status: "FAILED", unitsUsed: Math.max(0, seo.unitsUsed - startingUnits), error: message.slice(0, 2_000), finishedAt: new Date() },
+    });
+    throw error;
+  }
+}
+
+/**
+ * One-shot dispatcher for Railway Cron. It performs only jobs whose durable
+ * success timestamp is stale, then exits so overlapping schedulers cannot
+ * silently accumulate in long-lived processes.
+ */
+async function runDue(): Promise<JobResult[]> {
+  const results: JobResult[] = [];
+  const [teamCount, gameCount, seasonCount] = await Promise.all([
+    prisma.team.count({ where: { league: { slug: "NFL" } } }),
+    prisma.game.count({ where: { league: { slug: "NFL" } } }),
+    prisma.season.count({ where: { league: { slug: "NFL" }, isCurrent: true } }),
+  ]);
+
+  await runScheduled("SYNC_TEAMS", 7 * DAY, "teams", syncTeams, results, teamCount === 0);
+  await runScheduled("SYNC_SCHEDULE", 6 * HOUR, "schedule", syncGames, results, gameCount === 0 || seasonCount === 0);
+  await runScheduled("SYNC_STANDINGS", 12 * HOUR, "standings", syncStandings, results);
+  await runScheduled("SYNC_PLAYERS", 6 * HOUR, "players", syncPlayers, results);
+  await runScheduled("SYNC_INJURIES", 6 * HOUR, "injuries", syncInjuries, results);
+  await runScheduled("SYNC_LIVE_GAMES", 15 * MINUTE, "live games", syncLiveGames, results);
+  // Three core markets every eight hours plus four prop markets once daily
+  // stays below The Odds API's documented free monthly quota.
+  await runScheduled("SYNC_ODDS", 8 * HOUR, "odds", syncOdds, results);
+  await runScheduled("SETTLE_PREDICTIONS", 15 * MINUTE, "settlement", settlePredictions, results);
+  await runScheduled("PROCESS_GAMIFICATION", 30 * MINUTE, "referrals", processReferrals, results);
+  await runScheduled("SEND_NOTIFICATIONS", 15 * MINUTE, "notifications", sendFollowNotifications, results);
+
+  const configuration = env();
+  const seo = new SeoService();
+  try {
+    if (configuration.SEMRUSH_API_KEY && configuration.SEMRUSH_RESEARCH_ENABLED === "true") {
+      await runScheduled("SEO_REFRESH_EXISTING_RANKINGS", 30 * DAY, "SEO rankings", () => withLog("SEO_REFRESH_EXISTING_RANKINGS", "semrush", () => withSeoRun(seo, "EXISTING", async () => {
+          const value = await seo.refreshExistingRankings(new URL(configuration.APP_URL).hostname);
+          return { processed: value.keywordsFound, keywordsFound: value.keywordsFound, metadata: { source: value.source } };
+        })), results);
+      await runScheduled("SEO_RESEARCH_KEYWORDS", 30 * DAY, "SEO research", () => withLog("SEO_RESEARCH_KEYWORDS", "semrush", () => withSeoRun(seo, "OPPORTUNITIES", async () => {
+          const value = await seo.researchKeywords();
+          return { processed: value.researched, keywordsFound: value.researched, metadata: { opportunitiesScored: value.scored } };
+        })), results);
+    }
+    await runScheduled("SEO_TECHNICAL_AUDIT", DAY, "technical SEO audit", () => withLog("SEO_TECHNICAL_AUDIT", "internal-crawler", () => withSeoRun(seo, "TECHNICAL", async () => {
+        const value = await seo.auditPages(configuration.APP_URL);
+        return { processed: value.audited, metadata: { issues: value.issues } };
+      })), results);
+  } finally {
+    await seo.close();
+  }
+  return results;
+}
+
+const commands: Record<string, () => Promise<JobResult | JobResult[]>> = {
+  due: runDue,
+  teams: syncTeams,
+  schedule: syncGames,
+  standings: syncStandings,
+  players: syncPlayers,
+  injuries: syncInjuries,
+  live: syncLiveGames,
+  odds: syncOdds,
+  settle: settlePredictions,
+  referrals: processReferrals,
+  notifications: sendFollowNotifications,
+};
+
+async function main(): Promise<void> {
+  const command = process.argv[2] ?? "due";
+  const run = commands[command];
+  if (!run) throw new Error(`Unknown worker command: ${command}`);
+  console.info(`[worker] ${command} started at ${new Date().toISOString()}`);
+  const value = await run();
+  const results = Array.isArray(value) ? value : [value];
+  if (results.some((result) => result.error)) process.exitCode = 1;
+  console.info(`[worker] ${command} finished at ${new Date().toISOString()}`);
+}
+
+main()
+  .catch((error) => {
+    console.error("[worker] fatal", error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
