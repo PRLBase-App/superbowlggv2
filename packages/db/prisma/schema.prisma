@@ -1212,6 +1212,8 @@ model IntegrationSyncLog {
 model SeoKeyword {
   id              String              @id @default(cuid())
   keyword         String
+  database        String              @default("us") // SEMrush regional database: us | ca | mx | ...
+  semrushIntents  String[]            @default([]) // Raw SEMrush intent codes; may contain more than one intent
   cluster         String?
   searchVolume    Int?
   difficulty      Int?
@@ -1223,7 +1225,7 @@ model SeoKeyword {
   targetUrl       String?
   priority        SeoKeywordPriority?
   status          String              @default("NEW")
-  source          String              @default("SEED") // SEED | SEMRUSH | MANUAL
+  source          String              @default("SEED") // SEED | SEMRUSH | SEMRUSH_IMPORT | MANUAL
   relevance       Float               @default(1)
   productFit      Float               @default(1)
   freshness       Float               @default(0.5)
@@ -1236,19 +1238,25 @@ model SeoKeyword {
   pageLinks     SeoPageKeyword[]
   opportunities SeoOpportunity[]
 
-  @@unique([keyword])
+  @@unique([keyword, database])
   @@index([cluster])
   @@index([priority])
+  @@index([database, status])
 }
 
 model SeoKeywordSnapshot {
   id           String   @id @default(cuid())
   keywordId    String
+  sourceKey    String?  @unique
   searchVolume Int?
   difficulty   Int?
   cpc          Float?
   position     Int?
   traffic      Float?
+  trafficShare String?
+  source       String   @default("SEMRUSH")
+  isCurrent    Boolean  @default(false)
+  metadata     Json?
   capturedAt   DateTime @default(now())
 
   keyword SeoKeyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)

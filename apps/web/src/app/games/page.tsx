@@ -4,6 +4,7 @@ import { getGames, getSeason } from "@/lib/data";
 import { Badge, SectionTitle, TeamBadge, EmptyState } from "@/components/ui";
 import { kickoffDisplay, gameStatusLabel } from "@sbgg/core";
 import type { GameStatus } from "@sbgg/db";
+import { nflSeasonLabel } from "@/lib/season";
 
 export const metadata: Metadata = {
   title: "NFL Games, Odds & Schedule",
@@ -19,12 +20,13 @@ export default async function GamesPage({ searchParams }: { searchParams: Promis
   const status = allowedStatuses.find((candidate) => candidate === sp.status);
   const season = await getSeason();
   const games = await getGames({ week, status, limit: 100 });
+  const label = season ? nflSeasonLabel(season.year) : "NFL";
 
   const weeks = Array.from({ length: Math.max(4, season?.currentWeek ?? 4) }, (_, i) => i + 1);
 
   return (
     <div className="space-y-6">
-      <SectionTitle sub="Every game with odds and community picks">
+      <SectionTitle sub={`Every game in the ${label.toLowerCase()} dataset`}>
         <span className="text-brand-text">Games</span>
       </SectionTitle>
 

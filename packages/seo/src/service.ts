@@ -50,19 +50,24 @@ export class SeoService {
   async refreshExistingRankings(domain: string): Promise<{ keywordsFound: number; source: string }> {
     const c = this.semrush();
     if (!c) return { keywordsFound: 0, source: "disabled" };
+    const database = env().SEMRUSH_DATABASE.toLowerCase();
     const rows = await c.organicResearch(domain, 200);
     if (!rows) return { keywordsFound: 0, source: "semrush:no-units-or-none" };
 
     let count = 0;
     for (const row of rows) {
+      const intents = row.intent?.split(/[,;]+/).map((value) => value.trim()).filter(Boolean) ?? [];
       const kw = await prisma.seoKeyword.upsert({
-        where: { keyword: row.keyword },
-        update: { currentPosition: row.position, currentUrl: row.url, searchVolume: row.searchVolume, source: "SEMRUSH", lastRefreshed: new Date(), status: "RANKING" },
-        create: { keyword: row.keyword, currentPosition: row.position, currentUrl: row.url, searchVolume: row.searchVolume, source: "SEMRUSH", lastRefreshed: new Date(), status: "RANKING", cluster: "existing" },
+        where: { keyword_database: { keyword: row.keyword, database } },
+        update: { currentPosition: row.position, currentUrl: row.url, searchVolume: row.searchVolume, semrushIntents: intents, source: "SEMRUSH", lastRefreshed: new Date(), status: "RANKING" },
+        create: { keyword: row.keyword, database, currentPosition: row.position, currentUrl: row.url, searchVolume: row.searchVolume, semrushIntents: intents, source: "SEMRUSH", lastRefreshed: new Date(), status: "RANKING", cluster: "existing" },
       });
-      await prisma.seoKeywordSnapshot.create({
-        data: { keywordId: kw.id, searchVolume: row.searchVolume, position: row.position },
-      });
+      await prisma.$transaction([
+        prisma.seoKeywordSnapshot.updateMany({ where: { keywordId: kw.id, isCurrent: true }, data: { isCurrent: false } }),
+        prisma.seoKeywordSnapshot.create({
+          data: { keywordId: kw.id, searchVolume: row.searchVolume, position: row.position, traffic: row.traffic, source: "SEMRUSH", isCurrent: true },
+        }),
+      ]);
       count++;
     }
     return { keywordsFound: count, source: "semrush" };
@@ -71,11 +76,12 @@ export class SeoService {
   /** 2) Seed + refresh keyword research for the seed library. */
   async researchKeywords(): Promise<{ researched: number; scored: number; unitsUsed: number }> {
     const c = this.semrush();
+    const database = env().SEMRUSH_DATABASE.toLowerCase();
     let researched = 0;
     let scored = 0;
     for (const seed of SEED_KEYWORDS) {
       const kw = await prisma.seoKeyword.upsert({
-        where: { keyword: seed.keyword },
+        where: { keyword_database: { keyword: seed.keyword, database } },
         update: {
           cluster: seed.cluster,
           intent: seed.intent as SeoIntent,
@@ -87,6 +93,7 @@ export class SeoService {
         },
         create: {
           keyword: seed.keyword,
+          database,
           cluster: seed.cluster,
           intent: seed.intent as SeoIntent,
           targetUrl: seed.targetUrl,

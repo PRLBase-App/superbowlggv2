@@ -6,8 +6,8 @@ import { SUPER_BOWLS } from "@/lib/super-bowl-data";
 import { prisma } from "@sbgg/db";
 
 export const metadata: Metadata = {
-  title: "Super Bowl Odds",
-  description: "Current provider-sourced Super Bowl moneyline, spread and total odds. Superbowl.gg never takes bets.",
+  title: "Super Bowl LXI Odds, Spread & Lines (2027)",
+  description: "Provider-sourced 2027 Super Bowl LXI moneyline, spread and total lines when markets become available. Superbowl.gg never takes bets.",
 };
 
 export const revalidate = 60;
@@ -30,7 +30,7 @@ export default async function SuperBowlOddsPage() {
   return (
     <>
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Super Bowl", href: "/super-bowl" }, { label: "Odds" }]} />
-      <SeoHubShell title="Super Bowl Odds" description="Provider-sourced Super Bowl lines appear here without fabricated fallbacks.">
+      <SeoHubShell title={`Super Bowl ${upcoming.number} Odds, Spreads & Lines`} description="Provider-sourced Super Bowl moneyline, point spread and total lines appear here without fabricated fallbacks.">
         <Card>
           <p className="text-xs uppercase tracking-wide text-brand-muted">Super Bowl {upcoming.number} · {upcoming.year}</p>
           <p className="mt-1 text-lg font-semibold text-brand-text">{game ? `${game.awayTeam.name} vs ${game.homeTeam.name}` : "Matchup not set"}</p>

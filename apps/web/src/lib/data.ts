@@ -4,8 +4,10 @@ import { trendingScore } from "@sbgg/gamification";
 /** Server-side data access for pages. All queries hit the real DB. */
 
 export async function getGames(opts: { week?: number; status?: GameStatus; league?: LeagueSlug; limit?: number } = {}) {
+  const season = await getSeason(opts.league ?? "NFL");
   return prisma.game.findMany({
     where: {
+      ...(season ? { seasonId: season.id } : {}),
       ...(opts.week ? { week: opts.week } : {}),
       ...(opts.status ? { status: opts.status } : {}),
       ...(opts.league ? { league: { slug: opts.league } } : {}),
@@ -84,12 +86,18 @@ export async function getStandings() {
   });
 }
 
-export async function getSeason() {
-  return prisma.season.findFirst({ where: { league: { slug: "NFL" } }, orderBy: { year: "desc" } });
+export async function getSeason(league: LeagueSlug = "NFL") {
+  return prisma.season.findFirst({ where: { league: { slug: league } }, orderBy: { year: "desc" } });
 }
 
 export async function getInjuries() {
-  return prisma.injury.findMany({ include: { player: { include: { team: true } } }, orderBy: { reportedAt: "desc" }, take: 40 });
+  const season = await getSeason();
+  return prisma.injury.findMany({
+    where: season ? { reportedAt: { gte: season.startDate, lte: season.endDate } } : {},
+    include: { player: { include: { team: true } } },
+    orderBy: { reportedAt: "desc" },
+    take: 40,
+  });
 }
 
 export async function getPredictionFeed(opts: { filter?: string; market?: PredictionMarket; gameId?: string; userId?: string; limit?: number } = {}) {

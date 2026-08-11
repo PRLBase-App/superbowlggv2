@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SeoHubShell, Breadcrumbs } from "@/components/seo-shell";
-import { Card, TeamBadge, Badge } from "@/components/ui";
+import { Card, TeamBadge, Badge, EmptyState } from "@/components/ui";
 import { getGames, getStandings, getSeason, getInjuries } from "@/lib/data";
 import { kickoffDisplay } from "@sbgg/core";
+import { isHistoricalNflSeason, nflSeasonLabel } from "@/lib/season";
 
 export const metadata: Metadata = {
   title: "NFL — Schedule, Scores, Standings, Odds & Predictions",
@@ -15,6 +16,8 @@ export const revalidate = 60;
 export default async function NflHubPage() {
   const [games, standings, season, injuries] = await Promise.all([getGames({ status: "SCHEDULED", limit: 12 }), getStandings(), getSeason(), getInjuries()]);
   const week = season?.currentWeek ?? 1;
+  const label = season ? nflSeasonLabel(season.year) : "NFL";
+  const historical = season ? isHistoricalNflSeason(season.year) : false;
 
   const links = [
     { href: "/nfl/schedule", label: "Schedule" },
@@ -42,23 +45,25 @@ export default async function NflHubPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(nflSchema) }} />
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "NFL" }]} />
-      <SeoHubShell title="NFL" description={`The complete 2026 NFL season: schedules, scores, standings, odds, community predictions and analytics — all in one place. Week ${week} featured below.`} links={links}>
+      <SeoHubShell title="NFL" description={historical ? `${label}: provider-backed schedules, final scores, standings and injury observations. Current-season access is not configured.` : `The complete ${label.toLowerCase()}: schedules, scores, standings, odds, community predictions and analytics — all in one place. Week ${week} featured below.`} links={links}>
         <div className="grid gap-6 lg:grid-cols-3">
           <section className="lg:col-span-2">
-            <h2 className="font-display mb-3 text-xl font-semibold">Upcoming games (Week {week})</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {games.map((g) => (
-                <Link key={g.id} href={`/games/${g.id}`} className="card card-hover">
-                  <div className="flex items-center justify-between text-sm">
-                    <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} size="sm" />
-                    <span className="text-xs text-brand-muted">@</span>
-                    <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} size="sm" />
-                  </div>
-                  <p className="mt-2 text-xs text-brand-muted">{kickoffDisplay(g.scheduledAt)}</p>
-                </Link>
-              ))}
-            </div>
-            <h2 className="font-display mb-3 mt-8 text-xl font-semibold">Injury watch</h2>
+            <h2 className="font-display mb-3 text-xl font-semibold">{historical ? `${season?.year} schedule archive` : `Upcoming games (Week ${week})`}</h2>
+            {games.length ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {games.map((g) => (
+                  <Link key={g.id} href={`/games/${g.id}`} className="card card-hover">
+                    <div className="flex items-center justify-between text-sm">
+                      <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} size="sm" />
+                      <span className="text-xs text-brand-muted">@</span>
+                      <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} size="sm" />
+                    </div>
+                    <p className="mt-2 text-xs text-brand-muted">{kickoffDisplay(g.scheduledAt)}</p>
+                  </Link>
+                ))}
+              </div>
+            ) : <EmptyState title={historical ? "This archived season has no upcoming games" : "No upcoming games are available yet"} />}
+            <h2 className="font-display mb-3 mt-8 text-xl font-semibold">{historical ? "Archived injury observations" : "Injury watch"}</h2>
             <div className="grid gap-2 sm:grid-cols-2">
               {injuries.slice(0, 6).map((i) => (
                 <Card key={i.id} className="!p-3">

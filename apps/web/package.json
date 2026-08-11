@@ -9,7 +9,8 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "seo:research": "tsx src/scripts/seo-research.ts"
+    "seo:research": "tsx src/scripts/seo-research.ts",
+    "seo:import-rankings": "tsx src/scripts/seo-import-rankings.ts"
   },
   "dependencies": {
     "@sbgg/affiliate": "workspace:*",

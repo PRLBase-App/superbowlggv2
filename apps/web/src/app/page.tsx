@@ -1,20 +1,22 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getSessionUser } from "@/lib/session";
-import { getGames, getLeaderboard, getMarketplaceOffers, getAffiliateOffers, getStandings, getPredictionFeed } from "@/lib/data";
+import { getGames, getLeaderboard, getMarketplaceOffers, getAffiliateOffers, getStandings, getPredictionFeed, getSeason } from "@/lib/data";
 import { Card, Badge, SectionTitle, TeamBadge, EmptyState } from "@/components/ui";
 import { kickoffDisplay, gameStatusLabel } from "@sbgg/core";
 import { prisma } from "@sbgg/db";
+import { SUPER_BOWLS } from "@/lib/super-bowl-data";
+import { nflSeasonLabel } from "@/lib/season";
 
 export const metadata: Metadata = {
-  title: "Superbowl.gg — NFL Predictions, Picks, Odds & Community",
-  description: "American football prediction platform. NFL picks, predictions, odds, standings, player stats, community leaderboards and Super Bowl analysis.",
+  title: "Superbowl.gg — NFL Predictions, Super Bowl Odds & Picks",
+  description: "Provider-sourced NFL and Super Bowl odds, spreads and totals alongside community predictions, standings, player stats and transparent leaderboards.",
 };
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [user, games, trending, leaderboard, offers, affiliateOffers, standings] = await Promise.all([
+  const [user, games, trending, leaderboard, offers, affiliateOffers, standings, season] = await Promise.all([
     getSessionUser(),
     getGames({ status: "SCHEDULED", limit: 8 }),
     getPredictionFeed({ filter: "trending", limit: 6 }),
@@ -22,6 +24,7 @@ export default async function HomePage() {
     getMarketplaceOffers(),
     getAffiliateOffers(),
     getStandings(),
+    getSeason(),
   ]);
 
   const liveGames = await getGames({ status: "LIVE", limit: 4 });
@@ -40,6 +43,7 @@ export default async function HomePage() {
 
   const topDivisions = standings.slice(0, 8);
   const seasonContext = showGames[0];
+  const nextSuperBowl = SUPER_BOWLS[SUPER_BOWLS.length - 1]!;
 
   return (
     <div className="space-y-12">
@@ -47,7 +51,7 @@ export default async function HomePage() {
       <section className="yardlines relative overflow-hidden rounded-2xl border border-brand-border bg-gradient-to-b from-brand-surface2 via-brand-surface to-brand-bg px-6 py-14 sm:px-12">
         <div className="grid-field pointer-events-none absolute inset-0 opacity-60" aria-hidden />
         <div className="relative max-w-2xl">
-          <Badge tone="blue" className="mb-4">{seasonContext ? `${seasonContext.season.year} NFL Season · Week ${seasonContext.week}` : "NFL predictions & analytics"}</Badge>
+          <Badge tone="blue" className="mb-4">{seasonContext ? `${nflSeasonLabel(seasonContext.season.year)} · Week ${seasonContext.week}` : "NFL predictions & analytics"}</Badge>
           {user ? (
             <p className="mb-2 text-sm text-brand-muted">Welcome back, {user.name?.split(" ")[0] ?? user.username}</p>
           ) : null}
@@ -70,6 +74,30 @@ export default async function HomePage() {
             </Link>
           </div>
         </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <Card className="yardlines">
+          <Badge tone="gold">Super Bowl {nextSuperBowl.number} · {nextSuperBowl.year}</Badge>
+          <h2 className="font-display mt-3 text-2xl font-bold text-brand-text">Super Bowl odds, spreads and predictions</h2>
+          <p className="mt-2 max-w-2xl text-sm text-brand-muted">
+            Follow the road to {nextSuperBowl.venue} in {nextSuperBowl.city}. Verified moneyline, spread and total lines appear only when the configured odds provider publishes a matched Super Bowl event.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/super-bowl" className="btn-primary">Super Bowl Hub</Link>
+            <Link href="/super-bowl/odds" className="btn-secondary">Odds & Lines</Link>
+            <Link href="/super-bowl/predictions" className="btn-secondary">Predictions</Link>
+          </div>
+        </Card>
+        <Card>
+          <p className="text-xs uppercase tracking-wide text-brand-muted">Event facts</p>
+          <dl className="mt-3 space-y-3 text-sm">
+            <div><dt className="text-brand-muted">Venue</dt><dd className="font-semibold text-brand-text">{nextSuperBowl.venue}</dd></div>
+            <div><dt className="text-brand-muted">Host city</dt><dd className="font-semibold text-brand-text">{nextSuperBowl.city}</dd></div>
+            <div><dt className="text-brand-muted">Matchup</dt><dd className="font-semibold text-brand-text">To be determined through the NFL playoffs</dd></div>
+          </dl>
+          <p className="mt-4 text-xs text-brand-muted">Superbowl.gg provides information and community predictions; it does not accept wagers.</p>
+        </Card>
       </section>
 
       {/* ── Today's / upcoming games ── */}
@@ -195,7 +223,7 @@ export default async function HomePage() {
       {/* ── Standings snapshot ── */}
       <section>
         <SectionTitle sub="NFL season context">
-          <Link href="/nfl/standings" className="text-brand-primary hover:underline">NFL Standings</Link>
+          <Link href="/nfl/standings" className="text-brand-primary hover:underline">{season ? nflSeasonLabel(season.year) : "NFL"} Standings</Link>
         </SectionTitle>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {topDivisions.map((s) => (

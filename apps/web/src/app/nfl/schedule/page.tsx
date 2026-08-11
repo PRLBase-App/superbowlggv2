@@ -4,17 +4,26 @@ import { SeoHubShell, Breadcrumbs } from "@/components/seo-shell";
 import { Badge, TeamBadge, EmptyState } from "@/components/ui";
 import { getGames, getSeason } from "@/lib/data";
 import { kickoffDisplay, gameStatusLabel } from "@sbgg/core";
+import { isHistoricalNflSeason, nflSeasonLabel } from "@/lib/season";
 
-export const metadata: Metadata = {
-  title: "NFL Schedule 2026 — Every Game, Every Week",
-  description: "Full 2026 NFL schedule by week: dates, times, matchups and broadcast info.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const season = await getSeason();
+  const label = season ? nflSeasonLabel(season.year) : "NFL";
+  return {
+    title: `${label} Schedule — Every Game, Every Week`,
+    description: season && isHistoricalNflSeason(season.year)
+      ? `Archived ${season.year} NFL schedule from the configured sports provider: dates, matchups, results and broadcast info.`
+      : `Full ${label.toLowerCase()} schedule by week: dates, times, matchups and broadcast info.`,
+  };
+}
 
 export const revalidate = 60;
 
 export default async function NflSchedulePage({ searchParams }: { searchParams: Promise<{ week?: string }> }) {
   const sp = await searchParams;
   const season = await getSeason();
+  const label = season ? nflSeasonLabel(season.year) : "NFL";
+  const historical = season ? isHistoricalNflSeason(season.year) : false;
   const weeks = Array.from({ length: Math.max(4, season?.currentWeek ?? 4) }, (_, i) => i + 1);
   const week = sp.week ? Number(sp.week) : 1;
   const games = await getGames({ week, limit: 40 });
@@ -25,7 +34,7 @@ export default async function NflSchedulePage({ searchParams }: { searchParams: 
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schedSchema) }} />
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "NFL", href: "/nfl" }, { label: "Schedule" }]} />
-      <SeoHubShell title="NFL Schedule 2026" description="Every NFL game by week with kickoff times and broadcast info. Updated continuously during the season.">
+      <SeoHubShell title={`${label} Schedule`} description={historical ? "Archived provider schedule with final scores, kickoff times and broadcast info." : "Every NFL game by week with kickoff times and broadcast info. Updated continuously during the season."}>
         <nav className="mb-4 flex flex-wrap gap-2" aria-label="Week selection">
           {weeks.map((w) => (
             <Link key={w} href={`/nfl/schedule?week=${w}`} className={`tab ${week === w ? "tab-active" : ""}`}>Week {w}</Link>

@@ -2,17 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SeoHubShell, Breadcrumbs } from "@/components/seo-shell";
 import { TeamBadge, EmptyState } from "@/components/ui";
-import { getStandings } from "@/lib/data";
+import { getSeason, getStandings } from "@/lib/data";
+import { isHistoricalNflSeason, nflSeasonLabel } from "@/lib/season";
 
-export const metadata: Metadata = {
-  title: "NFL Standings 2026 — AFC & NFC",
-  description: "Current NFL standings for the 2026 season: wins, losses, points for and against.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const season = await getSeason();
+  const label = season ? nflSeasonLabel(season.year) : "NFL";
+  return {
+    title: `${label} Standings — AFC & NFC`,
+    description: season && isHistoricalNflSeason(season.year)
+      ? `Final ${season.year} NFL standings from the configured sports provider.`
+      : `${label} standings: wins, losses, points for and against.`,
+  };
+}
 
 export const revalidate = 300;
 
 export default async function NflStandingsPage() {
-  const standings = await getStandings();
+  const [standings, season] = await Promise.all([getStandings(), getSeason()]);
+  const label = season ? nflSeasonLabel(season.year) : "NFL";
+  const historical = season ? isHistoricalNflSeason(season.year) : false;
   const grouped: Record<string, typeof standings> = {};
   for (const s of standings) {
     const key = `${s.team.conference} ${s.team.division}`;
@@ -22,7 +31,7 @@ export default async function NflStandingsPage() {
   return (
     <>
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "NFL", href: "/nfl" }, { label: "Standings" }]} />
-      <SeoHubShell title="NFL Standings 2026" description="Conference and division standings from genuine game results.">
+      <SeoHubShell title={`${label} Standings`} description={historical ? "Final conference and division standings from the archived provider season." : "Conference and division standings from genuine game results."}>
         {standings.length === 0 ? (
           <EmptyState title="Standings update once games finish" />
         ) : (

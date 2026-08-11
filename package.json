@@ -15,6 +15,7 @@
     "db:migrate": "pnpm --filter @sbgg/db migrate",
     "db:seed": "pnpm --filter @sbgg/db seed",
     "seo:research": "pnpm --filter @sbgg/web seo:research",
+    "seo:import-rankings": "pnpm --filter @sbgg/web seo:import-rankings",
     "worker:start": "pnpm --filter @sbgg/worker start"
   },
   "engines": {

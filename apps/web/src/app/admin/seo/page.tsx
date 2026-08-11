@@ -8,7 +8,11 @@ export const revalidate = 60;
 
 export default async function AdminSeoPage() {
   const [keywords, opportunities, pages, runs] = await Promise.all([
-    prisma.seoKeyword.findMany({ orderBy: { searchVolume: "desc" }, take: 200 }),
+    prisma.seoKeyword.findMany({
+      include: { snapshots: { where: { isCurrent: true }, orderBy: { capturedAt: "desc" }, take: 1 } },
+      orderBy: [{ status: "asc" }, { searchVolume: "desc" }],
+      take: 200,
+    }),
     prisma.seoOpportunity.findMany({ include: { keyword: true }, orderBy: { score: "desc" }, take: 100 }),
     prisma.seoPage.count(),
     prisma.seoResearchRun.findMany({ orderBy: { startedAt: "desc" }, take: 10 }),
@@ -25,7 +29,7 @@ export default async function AdminSeoPage() {
       <div className="grid gap-3 sm:grid-cols-3">
         {[
           { label: "Keywords in research DB", value: keywords.length },
-          { label: "Ranking keywords (SEMrush)", value: ranking.length },
+          { label: "Localized rankings (SEMrush)", value: ranking.length },
           { label: "P0 (protect) / P1 (immediate)", value: `${p0.length} / ${p1.length}` },
           { label: "Tracked pages", value: pages },
           { label: "Open opportunities", value: opportunities.length },
@@ -37,6 +41,36 @@ export default async function AdminSeoPage() {
           </div>
         ))}
       </div>
+
+      <section>
+        <h2 className="font-display mb-3 text-lg font-semibold">Current organic rankings</h2>
+        {ranking.length === 0 ? (
+          <p className="text-sm text-brand-muted">No measured organic rankings have been imported yet.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-brand-border">
+            <table className="w-full text-sm">
+              <thead className="bg-brand-surface"><tr><th className="table-head px-4 py-2.5">Database</th><th className="table-head px-4 py-2.5">Keyword</th><th className="table-head px-4 py-2.5">Intent</th><th className="table-head px-4 py-2.5 text-right">Position</th><th className="table-head px-4 py-2.5 text-right">Volume</th><th className="table-head px-4 py-2.5 text-right">KD</th><th className="table-head px-4 py-2.5 text-right">Traffic</th><th className="table-head px-4 py-2.5">Ranking URL</th></tr></thead>
+              <tbody className="divide-y divide-brand-border">
+                {ranking.map((keyword) => {
+                  const snapshot = keyword.snapshots[0];
+                  return (
+                    <tr key={keyword.id} className="hover:bg-brand-surface">
+                      <td className="px-4 py-2.5 uppercase text-brand-muted">{keyword.database}</td>
+                      <td className="px-4 py-2.5 font-medium text-brand-text">{keyword.keyword}</td>
+                      <td className="px-4 py-2.5 text-brand-muted">{keyword.semrushIntents.join(", ") || "—"}</td>
+                      <td className="scoreboard-num px-4 py-2.5 text-right">{keyword.currentPosition ?? "—"}</td>
+                      <td className="scoreboard-num px-4 py-2.5 text-right">{keyword.searchVolume ?? "—"}</td>
+                      <td className="scoreboard-num px-4 py-2.5 text-right">{keyword.difficulty ?? "—"}</td>
+                      <td className="scoreboard-num px-4 py-2.5 text-right">{snapshot ? `${snapshot.traffic ?? "—"} (${snapshot.trafficShare ?? "—"})` : "—"}</td>
+                      <td className="max-w-64 truncate px-4 py-2.5 font-mono text-xs text-brand-muted">{keyword.currentUrl ?? "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       <section>
         <h2 className="font-display mb-3 text-lg font-semibold">Top opportunities</h2>

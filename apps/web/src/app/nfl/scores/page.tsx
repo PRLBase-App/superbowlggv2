@@ -2,27 +2,36 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SeoHubShell, Breadcrumbs } from "@/components/seo-shell";
 import { Badge, TeamBadge, EmptyState } from "@/components/ui";
-import { getGames } from "@/lib/data";
+import { getGames, getSeason } from "@/lib/data";
 import { kickoffDisplay } from "@sbgg/core";
+import { isHistoricalNflSeason, nflSeasonLabel } from "@/lib/season";
 
-export const metadata: Metadata = {
-  title: "NFL Scores Today — Live & Final Results",
-  description: "NFL scores: live scores, final results and upcoming games.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const season = await getSeason();
+  const label = season ? nflSeasonLabel(season.year) : "NFL";
+  const historical = season ? isHistoricalNflSeason(season.year) : false;
+  return {
+    title: historical ? `${label} Scores — Final Results` : "NFL Scores Today — Live & Final Results",
+    description: historical ? `Final scores from the archived ${season?.year} NFL provider dataset.` : "NFL scores: live scores, final results and upcoming games.",
+  };
+}
 
 export const revalidate = 30;
 
 export default async function NflScoresPage() {
-  const [finalGames, liveGames, upcoming] = await Promise.all([
+  const [finalGames, liveGames, upcoming, season] = await Promise.all([
     getGames({ status: "FINAL", limit: 30 }),
     getGames({ status: "LIVE", limit: 5 }),
     getGames({ status: "SCHEDULED", limit: 12 }),
+    getSeason(),
   ]);
+  const label = season ? nflSeasonLabel(season.year) : "NFL";
+  const historical = season ? isHistoricalNflSeason(season.year) : false;
 
   return (
     <>
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "NFL", href: "/nfl" }, { label: "Scores" }]} />
-      <SeoHubShell title="NFL Scores" description="Live and final NFL scores from the current season, plus what's coming up next.">
+      <SeoHubShell title={`${label} Scores`} description={historical ? "Final scores from the archived provider season." : "Live and final NFL scores from the current season, plus what's coming up next."}>
         {liveGames.length ? (
           <section className="mb-8">
             <h2 className="font-display mb-3 text-xl font-semibold text-brand-danger">● Live now</h2>
