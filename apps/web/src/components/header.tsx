@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ComponentType } from "react";
@@ -45,10 +46,14 @@ export function SiteHeader({ user }: { user: SessionUserView | null }) {
         </div>
       </div>
       <div className="border-b border-white/10 bg-brand-nav text-white">
-        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Superbowl home">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-primary font-display text-base font-bold text-white shadow-[0_0_20px_rgba(62,125,213,0.5)]">SB</span>
-            <span className="font-display text-xl font-semibold tracking-wide text-white">SUPERBOWL<span className="text-[#65b7ff]">.GG</span></span>
+        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6">
+          <Link href="/" className="group flex shrink-0 items-center gap-1.5 sm:gap-2" aria-label="Superbowl.gg home">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5 shadow-[0_0_20px_rgba(62,125,213,0.34)] transition-transform duration-200 group-hover:scale-[1.04] sm:h-11 sm:w-11">
+              <Image src="/logo.svg" alt="" width={44} height={44} priority className="h-full w-full object-contain" />
+            </span>
+            <span className="text-[17px] font-black leading-none tracking-[-0.055em] text-white sm:text-[21px]">
+              superbowl<span className="text-[#4f7dff]">.gg</span>
+            </span>
           </Link>
 
           <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Primary navigation">
@@ -87,7 +92,7 @@ export function SiteHeader({ user }: { user: SessionUserView | null }) {
             ) : (
               <>
                 <Link href="/auth/sign-in" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-white/75 hover:bg-white/10 hover:text-white sm:inline-flex">Sign in</Link>
-                <Link href="/auth/sign-up" className="rounded-xl bg-brand-primary px-4 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-[#2463bc]">Join free</Link>
+                <Link href="/auth/sign-up" className="rounded-xl bg-brand-primary px-3 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-[#2463bc] sm:px-4">Join free</Link>
               </>
             )}
           </div>

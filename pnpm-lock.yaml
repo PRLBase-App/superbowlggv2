@@ -10,6 +10,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@next/third-parties':
+        specifier: 15.5.22
+        version: 15.5.22(next@15.5.22(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       '@sbgg/affiliate':
         specifier: workspace:*
         version: link:../../packages/affiliate
@@ -934,6 +937,12 @@ packages:
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
+
+  '@next/third-parties@15.5.22':
+    resolution: {integrity: sha512-1nb9lmV3sMKr5wrZ4scbjbYJp16tqEQOWPGDkDbPdJPkJ0/Iu95/SMiZ2YGFLyo+YEaHsARJfZKOGNE9m/5g2w==}
+    peerDependencies:
+      next: ^13.0.0 || ^14.0.0 || ^15.0.0
+      react: ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0
 
   '@noble/ciphers@2.3.0':
     resolution: {integrity: sha512-Clu/xdfgVTf9o7ngLOURaxePwR0j8sjclKEtVij10/jGulwFsPWCvvRgG/XjUVf8Nei+jLG6uwyXzUTGY1DQrw==}
@@ -3092,6 +3101,9 @@ packages:
     resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
     engines: {node: '>=6'}
 
+  third-party-capital@1.0.20:
+    resolution: {integrity: sha512-oB7yIimd8SuGptespDAZnNkzIz+NWaJCu2RMsbs4Wmp9zSDUM8Nhi3s2OOcqYuv3mN4hitXc8DVx+LyUmbUDiA==}
+
   tinybench@2.9.0:
     resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
 
@@ -3830,6 +3842,12 @@ snapshots:
 
   '@next/swc-win32-x64-msvc@15.5.22':
     optional: true
+
+  '@next/third-parties@15.5.22(next@15.5.22(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      next: 15.5.22(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react: 19.2.8
+      third-party-capital: 1.0.20
 
   '@noble/ciphers@2.3.0': {}
 
@@ -6169,6 +6187,8 @@ snapshots:
   tailwindcss@4.3.3: {}
 
   tapable@2.3.3: {}
+
+  third-party-capital@1.0.20: {}
 
   tinybench@2.9.0: {}
 

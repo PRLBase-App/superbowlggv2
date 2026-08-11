@@ -13,6 +13,7 @@
     "seo:import-rankings": "tsx src/scripts/seo-import-rankings.ts"
   },
   "dependencies": {
+    "@next/third-parties": "15.5.22",
     "@sbgg/affiliate": "workspace:*",
     "@sbgg/auth": "workspace:*",
     "@sbgg/core": "workspace:*",

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
@@ -40,7 +41,14 @@ export function SiteFooter() {
       <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.35fr_1fr_1fr_0.8fr]">
           <div>
-            <p className="font-display text-xl font-semibold">SUPERBOWL<span className="text-[#65b7ff]">.GG</span></p>
+            <Link href="/" className="inline-flex items-center gap-2" aria-label="Superbowl.gg home">
+              <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5">
+                <Image src="/logo.svg" alt="" width={44} height={44} className="h-full w-full object-contain" />
+              </span>
+              <span className="text-[21px] font-black leading-none tracking-[-0.055em] text-white">
+                superbowl<span className="text-[#4f7dff]">.gg</span>
+              </span>
+            </Link>
             <p className="mt-3 max-w-sm text-sm leading-6 text-white/65">
               A community platform for NFL predictions, real schedules, provider-sourced statistics and the road to Super Bowl LXI in 2027.
             </p>

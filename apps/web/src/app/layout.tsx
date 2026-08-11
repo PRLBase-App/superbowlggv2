@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Suspense } from "react";
 import { Inter, Oswald } from "next/font/google";
 import { headers } from "next/headers";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/header";
 import { SiteFooter } from "@/components/footer";
-import { GoogleAnalyticsPageView } from "@/components/google-analytics-page-view";
 import { getSessionUser } from "@/lib/session";
 import { brand, env } from "@sbgg/core";
 
@@ -24,6 +23,7 @@ const HUB_CANONICAL_PATHS = new Set([
 
 export const metadata: Metadata = {
   metadataBase: new URL(`https://${brand.domain}`),
+  applicationName: "Superbowl.gg",
   title: {
     default: "NFL Predictions, News, Stats & Super Bowl Odds",
     template: "%s",
@@ -41,6 +41,16 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "NFL Predictions, News, Stats & Super Bowl Odds",
     description: "Predict football. Build your record. Beat the crowd.",
+  },
+  manifest: "/site.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: ["/favicon.ico"],
   },
   robots: { index: true, follow: true },
 };
@@ -71,16 +81,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" className={`${inter.variable} ${oswald.variable}`}>
       <head>
         {canonical ? <link rel="canonical" href={canonical} /> : null}
-        {googleAnalyticsId ? <script async src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`} /> : null}
-        {googleAnalyticsId ? <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${googleAnalyticsId}');` }} /> : null}
       </head>
       <body className="min-h-screen bg-brand-bg text-brand-text">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
-        {googleAnalyticsId ? <Suspense fallback={null}><GoogleAnalyticsPageView measurementId={googleAnalyticsId} /></Suspense> : null}
         <SiteHeader user={user} />
         <main className="mx-auto min-h-[60vh] max-w-[1440px] px-4 py-6 pb-24 sm:px-6 md:pb-6">{children}</main>
         <SiteFooter />
       </body>
+      {googleAnalyticsId ? <GoogleAnalytics gaId={googleAnalyticsId} /> : null}
     </html>
   );
 }
