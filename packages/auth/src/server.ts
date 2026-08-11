@@ -129,6 +129,9 @@ export const auth = betterAuth({
     max: 60,
   },
   advanced: {
+    ipAddress: {
+      ipAddressHeaders: ["cf-connecting-ip"],
+    },
     defaultCookieAttributes: {
       httpOnly: true,
       sameSite: "lax",
