@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@sbgg/db";
+import { publicUrl } from "@/lib/permanent-redirect";
 
 const REFERRAL_COOKIE = "sbgg_ref";
 const REFERRAL_MAX_AGE = 30 * 24 * 60 * 60;
@@ -8,7 +9,7 @@ const REFERRAL_MAX_AGE = 30 * 24 * 60 * 60;
 export async function GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code: rawCode } = await params;
   const code = rawCode.trim().toUpperCase();
-  const destination = new URL("/auth/sign-up", request.url);
+  const destination = publicUrl("/auth/sign-up");
 
   if (!/^[A-Z0-9_-]{3,64}$/.test(code)) return NextResponse.redirect(destination, 302);
 

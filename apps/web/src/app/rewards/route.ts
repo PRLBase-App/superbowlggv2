@@ -1,5 +1,6 @@
+import { publicUrl } from "@/lib/permanent-redirect";
 import { NextResponse } from "next/server";
 
-export function GET(request: Request) {
-  return NextResponse.redirect(new URL("/marketplace", request.url), 301);
+export function GET() {
+  return NextResponse.redirect(publicUrl("/marketplace"), 301);
 }

@@ -1,5 +1,6 @@
+import { publicUrl } from "@/lib/permanent-redirect";
 import { NextResponse } from "next/server";
 
-export function GET(request: Request) {
-  return NextResponse.redirect(new URL("/games", request.url), 307);
+export function GET() {
+  return NextResponse.redirect(publicUrl("/games"), 307);
 }
