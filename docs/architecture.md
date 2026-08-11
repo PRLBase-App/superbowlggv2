@@ -8,7 +8,7 @@ Browser / crawler
        v
 Next.js Web service ---- Better Auth ---- Resend
        |
-       +---- PostgreSQL <---- one-shot Worker (Railway cron)
+       +---- PostgreSQL <---- durable Worker (10-minute due loop)
                     |              |        |          |
                     |          API-Sports  Odds API  SEMrush MCP
                     |
@@ -20,7 +20,7 @@ The web and worker share domain packages, Prisma models, and validation. The bro
 ## Service boundaries
 
 - `apps/web`: server-rendered public pages, authenticated product UI, API routes, RBAC admin, XML sitemaps and structured metadata.
-- `apps/worker`: exits after one invocation. PostgreSQL timestamps decide which jobs are due, so Railway can invoke it every ten minutes without duplicating expensive provider work.
+- `apps/worker`: checks every ten minutes, while PostgreSQL timestamps decide which jobs are due. Restarts therefore do not duplicate expensive provider work; `start due` remains available for a one-shot administrative invocation.
 - `packages/db`: the only schema and migration history.
 - `packages/core`: environment validation, constants and the single pure settlement engine.
 - provider packages: outbound HTTP and response normalization only.

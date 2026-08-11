@@ -21,8 +21,8 @@ The migrations add uniqueness for provider mappings, odds outcomes, request idem
 ```bash
 pnpm --filter @sbgg/db generate
 pnpm --filter @sbgg/db migrate   # development
-pnpm --filter @sbgg/db deploy    # production migrations
+pnpm --filter @sbgg/db migrate:deploy    # production migrations
 pnpm --filter @sbgg/db seed      # idempotent configuration only
 ```
 
-Never run `prisma migrate reset` against production. Railway runs `deploy` and the idempotent seed before each release.
+Never run `prisma migrate reset` against production. Railway runs `migrate:deploy` and the idempotent seed before each release.

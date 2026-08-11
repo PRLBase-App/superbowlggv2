@@ -50,6 +50,15 @@ async function claimRequestedJob(jobType: SyncJobType): Promise<string | null> {
   return claim.count === 1 ? pending.id : null;
 }
 
+async function rejectRequestedJob(jobType: SyncJobType, message: string): Promise<void> {
+  const requestLogId = await claimRequestedJob(jobType);
+  if (!requestLogId) return;
+  await prisma.integrationSyncLog.update({
+    where: { id: requestLogId },
+    data: { status: "FAILED", finishedAt: new Date(), error: message.slice(0, 2_000) },
+  });
+}
+
 async function runScheduled(
   jobType: SyncJobType,
   intervalMs: number,
@@ -111,26 +120,38 @@ async function withSeoRun(
  */
 async function runDue(): Promise<JobResult[]> {
   const results: JobResult[] = [];
-  const [teamCount, gameCount, seasonCount] = await Promise.all([
-    prisma.team.count({ where: { league: { slug: "NFL" } } }),
-    prisma.game.count({ where: { league: { slug: "NFL" } } }),
-    prisma.season.count({ where: { league: { slug: "NFL" }, isCurrent: true } }),
-  ]);
+  const configuration = env();
+  const sportsJobs: SyncJobType[] = ["SYNC_TEAMS", "SYNC_SCHEDULE", "SYNC_STANDINGS", "SYNC_PLAYERS", "SYNC_INJURIES", "SYNC_LIVE_GAMES"];
 
-  await runScheduled("SYNC_TEAMS", 7 * DAY, "teams", syncTeams, results, teamCount === 0);
-  await runScheduled("SYNC_SCHEDULE", 6 * HOUR, "schedule", syncGames, results, gameCount === 0 || seasonCount === 0);
-  await runScheduled("SYNC_STANDINGS", 12 * HOUR, "standings", syncStandings, results);
-  await runScheduled("SYNC_PLAYERS", 6 * HOUR, "players", syncPlayers, results);
-  await runScheduled("SYNC_INJURIES", 6 * HOUR, "injuries", syncInjuries, results);
-  await runScheduled("SYNC_LIVE_GAMES", 15 * MINUTE, "live games", syncLiveGames, results);
-  // Three core markets every eight hours plus four prop markets once daily
-  // stays below The Odds API's documented free monthly quota.
-  await runScheduled("SYNC_ODDS", 8 * HOUR, "odds", syncOdds, results);
+  if (configuration.API_SPORTS_KEY) {
+    const [teamCount, gameCount, seasonCount] = await Promise.all([
+      prisma.team.count({ where: { league: { slug: "NFL" } } }),
+      prisma.game.count({ where: { league: { slug: "NFL" } } }),
+      prisma.season.count({ where: { league: { slug: "NFL" }, isCurrent: true } }),
+    ]);
+    await runScheduled("SYNC_TEAMS", 7 * DAY, "teams", syncTeams, results, teamCount === 0);
+    await runScheduled("SYNC_SCHEDULE", 6 * HOUR, "schedule", syncGames, results, gameCount === 0 || seasonCount === 0);
+    await runScheduled("SYNC_STANDINGS", 12 * HOUR, "standings", syncStandings, results);
+    await runScheduled("SYNC_PLAYERS", 6 * HOUR, "players", syncPlayers, results);
+    await runScheduled("SYNC_INJURIES", 6 * HOUR, "injuries", syncInjuries, results);
+    await runScheduled("SYNC_LIVE_GAMES", 15 * MINUTE, "live games", syncLiveGames, results);
+  } else {
+    console.warn("[worker] API_SPORTS_KEY is not configured; live sports synchronization is unavailable");
+    await Promise.all(sportsJobs.map((jobType) => rejectRequestedJob(jobType, "API_SPORTS_KEY is not configured")));
+  }
+
+  if (configuration.THE_ODDS_API_KEY) {
+    // Three core markets every eight hours plus four prop markets once daily
+    // stays below The Odds API's documented free monthly quota.
+    await runScheduled("SYNC_ODDS", 8 * HOUR, "odds", syncOdds, results);
+  } else {
+    console.warn("[worker] THE_ODDS_API_KEY is not configured; live odds synchronization is unavailable");
+    await rejectRequestedJob("SYNC_ODDS", "THE_ODDS_API_KEY is not configured");
+  }
   await runScheduled("SETTLE_PREDICTIONS", 15 * MINUTE, "settlement", settlePredictions, results);
   await runScheduled("PROCESS_GAMIFICATION", 30 * MINUTE, "referrals", processReferrals, results);
   await runScheduled("SEND_NOTIFICATIONS", 15 * MINUTE, "notifications", sendFollowNotifications, results);
 
-  const configuration = env();
   const seo = new SeoService();
   try {
     if (configuration.SEMRUSH_API_KEY && configuration.SEMRUSH_RESEARCH_ENABLED === "true") {
@@ -153,8 +174,57 @@ async function runDue(): Promise<JobResult[]> {
   return results;
 }
 
+let stopRequested = false;
+let releaseWait: (() => void) | undefined;
+
+function requestStop(signal: string): void {
+  if (!stopRequested) console.info(`[worker] received ${signal}; stopping after the current cycle`);
+  stopRequested = true;
+  releaseWait?.();
+}
+
+async function waitForNextCycle(durationMs: number): Promise<void> {
+  if (stopRequested) return;
+  await new Promise<void>((resolve) => {
+    let timer: NodeJS.Timeout;
+    const finish = () => {
+      clearTimeout(timer);
+      releaseWait = undefined;
+      resolve();
+    };
+    releaseWait = finish;
+    timer = setTimeout(finish, durationMs);
+  });
+}
+
+/** Always-on Railway worker wrapper around the durable due dispatcher. */
+async function runLoop(): Promise<JobResult[]> {
+  const handleSigterm = () => requestStop("SIGTERM");
+  const handleSigint = () => requestStop("SIGINT");
+  process.once("SIGTERM", handleSigterm);
+  process.once("SIGINT", handleSigint);
+  try {
+    while (!stopRequested) {
+      const startedAt = Date.now();
+      try {
+        const results = await runDue();
+        const failed = results.filter((result) => result.error).length;
+        if (failed > 0) console.error(`[worker] cycle completed with ${failed} failed job(s); due jobs will retry`);
+      } catch (error) {
+        console.error("[worker] cycle failed; due jobs will retry", error);
+      }
+      if (!stopRequested) await waitForNextCycle(Math.max(MINUTE, 10 * MINUTE - (Date.now() - startedAt)));
+    }
+  } finally {
+    process.off("SIGTERM", handleSigterm);
+    process.off("SIGINT", handleSigint);
+  }
+  return [];
+}
+
 const commands: Record<string, () => Promise<JobResult | JobResult[]>> = {
   due: runDue,
+  loop: runLoop,
   teams: syncTeams,
   schedule: syncGames,
   standings: syncStandings,

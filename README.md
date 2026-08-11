@@ -1,6 +1,6 @@
 # Superbowl.gg v2
 
-Production-oriented American-football prediction and community platform. The repository contains a Next.js web app, a one-shot background worker, PostgreSQL/Prisma persistence, real provider adapters, virtual-currency gamification, affiliate tracking, marketplace fulfillment, and an SEO research pipeline.
+Production-oriented American-football prediction and community platform. The repository contains a Next.js web app, a durable background worker, PostgreSQL/Prisma persistence, real provider adapters, virtual-currency gamification, affiliate tracking, marketplace fulfillment, and an SEO research pipeline.
 
 Production code never falls back to generated games, odds, users, predictions, rankings, offers, or SEO metrics. A missing provider credential produces an explicit unavailable/empty state and a failed integration log.
 
@@ -21,7 +21,7 @@ Requirements: Node.js 22+, pnpm 9+, and PostgreSQL.
 cp .env.example .env
 pnpm install
 pnpm --filter @sbgg/db generate
-pnpm --filter @sbgg/db deploy
+pnpm --filter @sbgg/db migrate:deploy
 pnpm --filter @sbgg/db seed
 pnpm dev
 ```
@@ -49,7 +49,7 @@ Provider-backed features require their own credentials. See [environment variabl
 
 ```text
 apps/web       Next.js UI, API routes, auth and admin
-apps/worker    one-shot scheduled provider/settlement/SEO jobs
+apps/worker    durable provider/settlement/SEO scheduler
 packages/db    Prisma schema, migrations and production-safe seed
 packages/core  validated environment and shared settlement rules
 packages/auth  Better Auth server configuration and Resend delivery
@@ -60,4 +60,4 @@ packages/affiliate affiliate, geo and marketplace services
 packages/seo   SEMrush MCP client, durable cache and technical crawler
 ```
 
-The Railway deployment uses one image for two services: `Web` and a cron-triggered `Worker`, plus PostgreSQL. Migrations and the configuration seed run as a pre-deploy command.
+The Railway deployment uses one image for two services: `Web` and an always-on `Worker`, plus PostgreSQL. The image dispatches by Railway's injected service name; PostgreSQL timestamps make every job cadence durable across restarts. Migrations and the configuration seed run as a pre-deploy command.

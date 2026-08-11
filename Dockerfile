@@ -38,4 +38,6 @@ WORKDIR /app
 COPY --from=builder --chown=node:node /app /app
 USER node
 EXPOSE 3000
-CMD ["pnpm", "--filter", "@sbgg/web", "start"]
+# Railway injects RAILWAY_SERVICE_NAME into every deployment. This keeps one
+# reproducible image while giving Web and Worker distinct long-lived commands.
+CMD ["sh", "-c", "if [ \"$RAILWAY_SERVICE_NAME\" = \"Worker\" ]; then exec pnpm --filter @sbgg/worker start loop; else exec pnpm --filter @sbgg/web start; fi"]

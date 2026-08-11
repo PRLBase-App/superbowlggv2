@@ -21,7 +21,7 @@ export default async function AdminGamesPage() {
       <section className="card space-y-4">
         <div>
           <h2 className="font-display text-lg font-semibold text-brand-text">Provider synchronization</h2>
-          <p className="text-sm text-brand-muted">Queue an idempotent worker job. The Railway cron worker claims requests and records the real provider result.</p>
+          <p className="text-sm text-brand-muted">Queue an idempotent worker job. The Railway worker claims requests and records the real provider result.</p>
         </div>
         <AdminTableActions actions={[
           { label: "Sync schedule", action: "sync.request", payload: { jobType: "SYNC_SCHEDULE" } },

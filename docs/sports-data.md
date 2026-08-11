@@ -16,4 +16,4 @@ The statistics parser is namespace-aware, so generic fields such as `yards` cann
 - players and injuries: every 6 hours
 - live game state and settlement: every 15 minutes
 
-The worker checks provider quota headers and limits detail requests. Configure `API_SPORTS_KEY`; without it, sports jobs fail visibly and no replacement data is inserted.
+The worker checks provider quota headers and limits detail requests. Configure `API_SPORTS_KEY`; without it, automatic sports jobs remain unavailable, manually queued syncs are marked failed with a configuration error, and no replacement data is inserted.
