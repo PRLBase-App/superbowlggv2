@@ -37,16 +37,20 @@ export async function POST(request: Request) {
 
   const userId = session.user.id;
   const requestedName = parsed.data.username ?? session.user.name ?? session.user.email.split("@")[0] ?? "user";
-  const username = normalizedUsername(requestedName, userId);
-  const referralCode = `${username.slice(0, 12)}-${userId.slice(-8)}`.toUpperCase();
+  const usernameBase = normalizedUsername(requestedName, userId);
 
   try {
     const result = await serializable(() => prisma.$transaction(async (tx) => {
       const existingProfile = await tx.profile.findUnique({ where: { userId } });
+      let username = existingProfile?.username ?? usernameBase;
       if (!existingProfile) {
         const nameOwner = await tx.profile.findUnique({ where: { username } });
-        if (nameOwner && nameOwner.userId !== userId) throw new Error("USERNAME_TAKEN");
+        if (nameOwner && nameOwner.userId !== userId) {
+          if (parsed.data.username) throw new Error("USERNAME_TAKEN");
+          username = normalizedUsername(`${username.slice(0, 15)}_${userId.slice(-8)}`, userId);
+        }
       }
+      const referralCode = `${username.slice(0, 12)}-${userId.slice(-8)}`.toUpperCase();
       const profile = existingProfile ?? await tx.profile.create({
         data: { userId, username, displayName: session.user.name, referralCode },
       });

@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "@sbgg/db";
 import { env } from "@sbgg/core";
+import { telegramLogin } from "./telegram";
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => ({
@@ -46,12 +47,25 @@ async function sendTransactionalEmail(input: { to: string; subject: string; acti
  * password, sessions. Passwords are hashed by Better Auth (scrypt); never
  * stored in plaintext. Additional fields (role, status) are stored on User.
  */
+const configuration = env();
+
 export const auth = betterAuth({
   appName: "Superbowl",
-  baseURL: env().APP_URL,
-  trustedOrigins: [env().APP_URL],
-  secret: env().AUTH_BETTER_SECRET,
+  baseURL: configuration.APP_URL,
+  trustedOrigins: [configuration.APP_URL],
+  secret: configuration.AUTH_BETTER_SECRET,
   database: prismaAdapter(prisma, { provider: "postgresql" }),
+  verification: {
+    modelName: "verificationToken",
+  },
+  socialProviders: configuration.AUTH_GOOGLE_ID && configuration.AUTH_GOOGLE_SECRET ? {
+    google: {
+      clientId: configuration.AUTH_GOOGLE_ID,
+      clientSecret: configuration.AUTH_GOOGLE_SECRET,
+      scope: ["openid", "email", "profile"],
+    },
+  } : {},
+  plugins: configuration.TELEGRAM_BOT_TOKEN ? [telegramLogin({ botToken: configuration.TELEGRAM_BOT_TOKEN })] : [],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
@@ -99,6 +113,16 @@ export const auth = betterAuth({
       status: { type: "string", defaultValue: "PENDING_VERIFICATION", input: false },
     },
   },
+  account: {
+    encryptOAuthTokens: true,
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => user.emailVerified ? { data: { ...user, status: "ACTIVE" } } : undefined,
+      },
+    },
+  },
   rateLimit: {
     enabled: true,
     window: 60,
@@ -108,7 +132,7 @@ export const auth = betterAuth({
     defaultCookieAttributes: {
       httpOnly: true,
       sameSite: "lax",
-      secure: env().NODE_ENV === "production",
+      secure: configuration.NODE_ENV === "production",
     },
   },
 });

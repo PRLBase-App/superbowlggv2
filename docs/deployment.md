@@ -19,11 +19,12 @@ The seed is idempotent and contains no public sample data. Do not run a destruct
 1. Provision PostgreSQL and reference its `DATABASE_URL` in both app services.
 2. Set `NODE_ENV=production`, public HTTPS URLs and two generated auth secrets.
 3. Set `SPORTS_DATA_PROVIDER=nflverse`; configure The Odds API and Resend when those live features should operate. Add API-Sports only when that optional provider is selected.
-4. Add the SEMrush token only after the subscription has MCP API units.
-5. Deploy Web, confirm `/api/health`, then deploy Worker.
-6. Inspect migration, seed and integration logs.
-7. Generate a Railway domain; connect `superbowl.gg` only after the deployment is healthy and update DNS.
-8. Re-run the SEO predeploy comparison after DNS cutover.
+4. Configure the GA4 measurement ID and social-login credentials. Register `https://superbowl.gg/api/auth/callback/google` in Google Cloud and assign `superbowl.gg` to the Telegram bot with BotFather `/setdomain`.
+5. Add the SEMrush token only after the subscription has MCP API units.
+6. Deploy Web, confirm `/api/health`, then deploy Worker.
+7. Inspect migration, seed and integration logs.
+8. Generate a Railway domain; connect `superbowl.gg` only after the deployment is healthy and update DNS.
+9. Re-run the SEO predeploy comparison after DNS cutover.
 
 Railway injects `RAILWAY_SERVICE_NAME`; the Docker command uses it to select the Web or Worker process without dashboard-only start-command overrides. The worker remains alive, logs job failures, and retries only when the durable success timestamp remains due. nflverse needs no credential. Missing credentials for optional providers skip their automatic jobs and reject manual sync requests explicitly; they never insert replacement data.
 

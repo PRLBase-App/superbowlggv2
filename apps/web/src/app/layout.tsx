@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Inter, Oswald } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 import { SiteHeader } from "@/components/header";
 import { SiteFooter } from "@/components/footer";
+import { GoogleAnalyticsPageView } from "@/components/google-analytics-page-view";
 import { getSessionUser } from "@/lib/session";
-import { brand } from "@sbgg/core";
+import { brand, env } from "@sbgg/core";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const oswald = Oswald({ subsets: ["latin"], variable: "--font-display" });
@@ -55,6 +57,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, requestHeaders] = await Promise.all([getSessionUser(), headers()]);
+  const googleAnalyticsId = env().GOOGLE_ANALYTICS_ID;
   const pathname = requestHeaders.get("x-sbgg-pathname") ?? "";
   const canonical = HUB_CANONICAL_PATHS.has(pathname) ? `https://${brand.domain}${pathname}` : null;
   const organizationJsonLd = {
@@ -66,9 +69,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   };
   return (
     <html lang="en" className={`${inter.variable} ${oswald.variable}`}>
-      <head>{canonical ? <link rel="canonical" href={canonical} /> : null}</head>
+      <head>
+        {canonical ? <link rel="canonical" href={canonical} /> : null}
+        {googleAnalyticsId ? <script async src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`} /> : null}
+        {googleAnalyticsId ? <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${googleAnalyticsId}');` }} /> : null}
+      </head>
       <body className="min-h-screen bg-brand-bg text-brand-text">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
+        {googleAnalyticsId ? <Suspense fallback={null}><GoogleAnalyticsPageView measurementId={googleAnalyticsId} /></Suspense> : null}
         <SiteHeader user={user} />
         <main className="mx-auto min-h-[60vh] max-w-[1440px] px-4 py-6 pb-24 sm:px-6 md:pb-6">{children}</main>
         <SiteFooter />

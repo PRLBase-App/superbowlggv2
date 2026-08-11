@@ -18,6 +18,11 @@ const serverEnvSchema = z.object({
   AUTH_BETTER_SECRET: z.string().min(32),
   EMAIL_FROM: z.string().min(3).default("Superbowl <noreply@superbowl.gg>"),
   RESEND_API_KEY: optionalString,
+  GOOGLE_ANALYTICS_ID: z.preprocess(emptyToUndefined, z.string().regex(/^G-[A-Z0-9]+$/).optional()),
+  AUTH_GOOGLE_ID: optionalString,
+  AUTH_GOOGLE_SECRET: optionalString,
+  TELEGRAM_BOT_TOKEN: optionalString,
+  TELEGRAM_BOT_USERNAME: z.preprocess(emptyToUndefined, z.string().regex(/^[A-Za-z0-9_]{5,32}$/).optional()),
   SPORTS_DATA_PROVIDER: z.enum(["nflverse", "api-sports"]).default("nflverse"),
   API_SPORTS_KEY: optionalString,
   API_SPORTS_BASE_URL: z.string().url().default("https://v1.american-football.api-sports.io"),
@@ -42,6 +47,12 @@ const serverEnvSchema = z.object({
   AI_PROVIDER: z.enum(["none", "openai", "anthropic"]).default("none"),
   AI_API_KEY: optionalString,
 }).superRefine((configuration, context) => {
+  if (Boolean(configuration.AUTH_GOOGLE_ID) !== Boolean(configuration.AUTH_GOOGLE_SECRET)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["AUTH_GOOGLE_ID"], message: "Google OAuth requires both AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET" });
+  }
+  if (Boolean(configuration.TELEGRAM_BOT_TOKEN) !== Boolean(configuration.TELEGRAM_BOT_USERNAME)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["TELEGRAM_BOT_TOKEN"], message: "Telegram login requires both TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_USERNAME" });
+  }
   if (configuration.NODE_ENV === "production") {
     const appUrl = new URL(configuration.APP_URL);
     if (appUrl.protocol !== "https:" || appUrl.hostname === "localhost") {

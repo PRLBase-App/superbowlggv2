@@ -11,6 +11,11 @@ Copy `.env.example` locally. Never commit `.env` and never put provider/auth key
 | `AUTH_BETTER_SECRET` | yes | independent minimum 32-character Better Auth secret |
 | `EMAIL_FROM` | yes for email | verified sender identity |
 | `RESEND_API_KEY` | yes for auth email | verification/reset delivery |
+| `GOOGLE_ANALYTICS_ID` | no | GA4 measurement ID such as `G-XXXXXXXXXX` |
+| `AUTH_GOOGLE_ID` | yes for Google login | Google OAuth web client ID |
+| `AUTH_GOOGLE_SECRET` | yes for Google login | server-only Google OAuth client secret |
+| `TELEGRAM_BOT_TOKEN` | yes for Telegram login | server-only bot token used to verify widget signatures |
+| `TELEGRAM_BOT_USERNAME` | yes for Telegram login | public bot username without the leading `@` |
 | `SPORTS_DATA_PROVIDER` | yes | `nflverse` (default) or `api-sports` |
 | `API_SPORTS_KEY` | only for `api-sports` | API-Sports American Football |
 | `API_SPORTS_BASE_URL` | no | provider base override |
@@ -30,3 +35,5 @@ Copy `.env.example` locally. Never commit `.env` and never put provider/auth key
 | geo/AI variables | no | disabled by default; no fabricated fallback |
 
 The production default is nflverse, which publishes real NFL schedules, rosters, team data and statistics without an API key. API-Sports remains available for explicitly selected historical or licensed coverage; it is never used as a fabricated fallback.
+
+Google OAuth uses `https://superbowl.gg/api/auth/callback/google` as its production redirect URI. Telegram login additionally requires `superbowl.gg` to be assigned to the bot through BotFather's `/setdomain` command.
