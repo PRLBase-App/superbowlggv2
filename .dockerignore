@@ -11,3 +11,8 @@ playwright-report
 test-results
 *.log
 .DS_Store
+
+# Local design references; production-ready copies already live in apps/web/public.
+/example.PNG
+/favicon_io/
+/logo.svg
