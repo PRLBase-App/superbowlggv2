@@ -1,15 +1,13 @@
 # syntax=docker/dockerfile:1
 FROM node:22-bookworm-slim AS base
 
-ENV PNPM_HOME=/pnpm
-ENV PATH=$PNPM_HOME:$PATH
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates openssl \
   && rm -rf /var/lib/apt/lists/* \
-  && corepack enable \
-  && corepack prepare pnpm@9.15.9 --activate
+  && npm install --global pnpm@9.15.9 \
+  && npm cache clean --force
 
 WORKDIR /app
 

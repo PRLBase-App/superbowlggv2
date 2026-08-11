@@ -9,7 +9,8 @@ The repository is designed for one Railway project named `Superbowl.gg` with thr
 `railway.toml` selects the Dockerfile and runs this pre-deploy command:
 
 ```bash
-pnpm --filter @sbgg/db migrate:deploy && pnpm --filter @sbgg/db seed
+pnpm --filter @sbgg/db migrate:deploy
+pnpm --filter @sbgg/db seed
 ```
 
 The seed is idempotent and contains no public sample data. Do not run a destructive reset in Railway.
