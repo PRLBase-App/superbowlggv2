@@ -1,14 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, BarChart3, CheckCircle2, Newspaper, ShieldCheck, Trophy, Users, Zap } from "lucide-react";
+import { ArrowRight, BarChart3, CheckCircle2, Newspaper, ShieldCheck, Trophy, Zap } from "lucide-react";
 import { getSessionUser } from "@/lib/session";
 import { getAffiliateOffers, getGames, getLeaderboard, getMarketplaceOffers, getNews, getPredictionFeed, getSeason, getStandings, getTeams } from "@/lib/data";
 import { Badge, Card, EmptyState, SectionTitle, TeamBadge } from "@/components/ui";
 import { NewsCard } from "@/components/news-card";
 import { TeamMarquee } from "@/components/team-marquee";
 import { gameStatusLabel, kickoffDisplay } from "@sbgg/core";
-import { prisma } from "@sbgg/db";
 import { SUPER_BOWLS } from "@/lib/super-bowl-data";
 import { currentNflSeasonYear } from "@/lib/season";
 
@@ -40,7 +39,7 @@ const FAQ = [
 
 export default async function HomePage() {
   const currentYear = currentNflSeasonYear();
-  const [user, games, liveGames, trending, leaderboard, offers, affiliateOffers, standings, season, teams, news, counts] = await Promise.all([
+  const [user, games, liveGames, trending, leaderboard, offers, affiliateOffers, standings, season, teams, news] = await Promise.all([
     getSessionUser(),
     getGames({ status: "SCHEDULED", limit: 8 }),
     getGames({ status: "LIVE", limit: 4 }),
@@ -52,7 +51,6 @@ export default async function HomePage() {
     getSeason(),
     getTeams(),
     getNews(5),
-    Promise.all([prisma.user.count(), prisma.prediction.count(), prisma.game.count({ where: { season: { year: currentYear } } })]),
   ]);
 
   const today = new Date().toDateString();
@@ -91,13 +89,6 @@ export default async function HomePage() {
               </Link>
             </div>
           </div>
-        </div>
-        <div className="relative grid border-t border-white/10 bg-black/20 sm:grid-cols-3">
-          {[
-            { label: "Registered predictors", value: counts[0].toLocaleString(), icon: Users },
-            { label: "Published predictions", value: counts[1].toLocaleString(), icon: BarChart3 },
-            { label: `${currentYear} games tracked`, value: counts[2].toLocaleString(), icon: Trophy },
-          ].map((metric) => <div key={metric.label} className="flex items-center gap-3 border-white/10 px-6 py-4 sm:border-r last:border-r-0"><metric.icon className="h-5 w-5 text-[#65b7ff]" /><div><p className="scoreboard-num text-xl font-bold">{metric.value}</p><p className="text-xs text-white/50">{metric.label}</p></div></div>)}
         </div>
       </section>
 
