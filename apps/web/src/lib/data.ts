@@ -77,7 +77,7 @@ export async function getPlayer(slug: string) {
 }
 
 export async function getStandings() {
-  const season = await prisma.season.findFirst({ where: { league: { slug: "NFL" } }, orderBy: { year: "desc" } });
+  const season = await getSeason();
   if (!season) return [];
   return prisma.standing.findMany({
     where: { seasonId: season.id },
@@ -87,7 +87,10 @@ export async function getStandings() {
 }
 
 export async function getSeason(league: LeagueSlug = "NFL") {
-  return prisma.season.findFirst({ where: { league: { slug: league } }, orderBy: { year: "desc" } });
+  return prisma.season.findFirst({
+    where: { league: { slug: league } },
+    orderBy: [{ isCurrent: "desc" }, { year: "desc" }],
+  });
 }
 
 export async function getInjuries() {
