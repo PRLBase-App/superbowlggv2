@@ -8,6 +8,7 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
+    "production:prepare": "prisma migrate deploy && tsx prisma/seed.ts",
     "seed": "tsx prisma/seed.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"

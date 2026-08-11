@@ -12,7 +12,4 @@ watchPatterns = [
 ]
 
 [deploy]
-preDeployCommand = [
-  "pnpm --filter @sbgg/db migrate:deploy",
-  "pnpm --filter @sbgg/db seed"
-]
+preDeployCommand = "pnpm --filter @sbgg/db production:prepare"
