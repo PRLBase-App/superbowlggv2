@@ -16,7 +16,7 @@ export function getSportsProvider(): SportsProvider {
   if (instance) return instance;
   const configuration = env();
   if (!configuration.API_SPORTS_KEY) throw new SportsProviderConfigurationError();
-  instance = new ApiSportsProvider(configuration.API_SPORTS_KEY, configuration.API_SPORTS_BASE_URL);
+  instance = new ApiSportsProvider(configuration.API_SPORTS_KEY, configuration.API_SPORTS_BASE_URL, configuration.API_SPORTS_SEASON);
   return instance;
 }
 

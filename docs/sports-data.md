@@ -17,3 +17,5 @@ The statistics parser is namespace-aware, so generic fields such as `yards` cann
 - live game state and settlement: every 15 minutes
 
 The worker checks provider quota headers and limits detail requests. Configure `API_SPORTS_KEY`; without it, automatic sports jobs remain unavailable, manually queued syncs are marked failed with a configuration error, and no replacement data is inserted.
+
+`API_SPORTS_SEASON` may explicitly select a real historical provider season when an API subscription does not include the current season. The UI and database retain that season year and provider coverage; the worker never relabels generated or guessed data as current sports data. Failed automatic jobs use a bounded backoff instead of retrying every worker cycle.

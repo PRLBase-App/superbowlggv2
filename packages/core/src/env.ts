@@ -20,6 +20,7 @@ const serverEnvSchema = z.object({
   RESEND_API_KEY: optionalString,
   API_SPORTS_KEY: optionalString,
   API_SPORTS_BASE_URL: z.string().url().default("https://v1.american-football.api-sports.io"),
+  API_SPORTS_SEASON: z.preprocess(emptyToUndefined, z.coerce.number().int().min(2000).max(2100).optional()),
   THE_ODDS_API_KEY: optionalString,
   THE_ODDS_API_BASE_URL: z.string().url().default("https://api.the-odds-api.com/v4"),
   SEMRUSH_API_KEY: optionalString,

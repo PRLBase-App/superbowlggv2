@@ -13,6 +13,7 @@ Copy `.env.example` locally. Never commit `.env` and never put provider/auth key
 | `RESEND_API_KEY` | yes for auth email | verification/reset delivery |
 | `API_SPORTS_KEY` | yes for NFL data | API-Sports American Football |
 | `API_SPORTS_BASE_URL` | no | provider base override |
+| `API_SPORTS_SEASON` | no | explicitly select an accessible real season when the provider plan excludes the current season |
 | `THE_ODDS_API_KEY` | yes for odds | The Odds API |
 | `THE_ODDS_API_BASE_URL` | no | provider base override |
 | `SEMRUSH_API_KEY` | yes for SEMrush runs | server-only MCP token |

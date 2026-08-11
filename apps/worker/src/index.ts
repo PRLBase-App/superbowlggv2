@@ -19,14 +19,17 @@ import {
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
+const FAILURE_RETRY_CEILING = 6 * HOUR;
 
 async function isDue(jobType: SyncJobType, intervalMs: number): Promise<boolean> {
   const latest = await prisma.integrationSyncLog.findFirst({
-    where: { jobType, status: "SUCCESS" },
-    orderBy: { finishedAt: "desc" },
-    select: { finishedAt: true },
+    where: { jobType, status: { in: ["SUCCESS", "FAILED"] }, finishedAt: { not: null } },
+    orderBy: { startedAt: "desc" },
+    select: { status: true, finishedAt: true },
   });
-  return !latest?.finishedAt || Date.now() - latest.finishedAt.getTime() >= intervalMs;
+  if (!latest?.finishedAt) return true;
+  const requiredWait = latest.status === "FAILED" ? Math.min(intervalMs, FAILURE_RETRY_CEILING) : intervalMs;
+  return Date.now() - latest.finishedAt.getTime() >= requiredWait;
 }
 
 async function execute(name: string, job: () => Promise<JobResult>, results: JobResult[]): Promise<JobResult> {
@@ -65,10 +68,9 @@ async function runScheduled(
   name: string,
   job: () => Promise<JobResult>,
   results: JobResult[],
-  force = false,
 ): Promise<void> {
   const requestLogId = await claimRequestedJob(jobType);
-  if (!force && !requestLogId && !await isDue(jobType, intervalMs)) return;
+  if (!requestLogId && !await isDue(jobType, intervalMs)) return;
   const result = await execute(name, job, results);
   if (requestLogId) {
     await prisma.integrationSyncLog.update({
@@ -124,13 +126,8 @@ async function runDue(): Promise<JobResult[]> {
   const sportsJobs: SyncJobType[] = ["SYNC_TEAMS", "SYNC_SCHEDULE", "SYNC_STANDINGS", "SYNC_PLAYERS", "SYNC_INJURIES", "SYNC_LIVE_GAMES"];
 
   if (configuration.API_SPORTS_KEY) {
-    const [teamCount, gameCount, seasonCount] = await Promise.all([
-      prisma.team.count({ where: { league: { slug: "NFL" } } }),
-      prisma.game.count({ where: { league: { slug: "NFL" } } }),
-      prisma.season.count({ where: { league: { slug: "NFL" }, isCurrent: true } }),
-    ]);
-    await runScheduled("SYNC_TEAMS", 7 * DAY, "teams", syncTeams, results, teamCount === 0);
-    await runScheduled("SYNC_SCHEDULE", 6 * HOUR, "schedule", syncGames, results, gameCount === 0 || seasonCount === 0);
+    await runScheduled("SYNC_TEAMS", 7 * DAY, "teams", syncTeams, results);
+    await runScheduled("SYNC_SCHEDULE", 6 * HOUR, "schedule", syncGames, results);
     await runScheduled("SYNC_STANDINGS", 12 * HOUR, "standings", syncStandings, results);
     await runScheduled("SYNC_PLAYERS", 6 * HOUR, "players", syncPlayers, results);
     await runScheduled("SYNC_INJURIES", 6 * HOUR, "injuries", syncInjuries, results);

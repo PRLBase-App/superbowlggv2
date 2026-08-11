@@ -122,6 +122,7 @@ export class ApiSportsProvider implements SportsProvider {
   constructor(
     private readonly apiKey: string,
     private readonly baseUrl = "https://v1.american-football.api-sports.io",
+    private readonly configuredSeason?: number,
   ) {}
 
   private async get<T>(path: string, params: Record<string, string | number | boolean | undefined> = {}): Promise<T> {
@@ -168,14 +169,25 @@ export class ApiSportsProvider implements SportsProvider {
   }
 
   async getCurrentSeason(leagueSlug: "NFL" | "NCAAF"): Promise<SeasonDTO> {
-    const rows = await this.get<unknown[]>("leagues", { id: LEAGUE_IDS[leagueSlug], current: true });
+    const rows = await this.get<unknown[]>("leagues", {
+      id: LEAGUE_IDS[leagueSlug],
+      current: this.configuredSeason == null ? true : undefined,
+    });
     const seasons = rows.flatMap((value) => {
       const candidates = object(value).seasons;
       return Array.isArray(candidates) ? candidates.flatMap((season) => parseSeason(season) ?? []) : [];
     });
-    const selected = seasons.find((season) => season.current) ?? seasons.sort((a, b) => b.year - a.year)[0];
-    if (!selected) throw new Error(`API-Sports has no current ${leagueSlug} season`);
-    return selected;
+    const selected = this.configuredSeason == null
+      ? seasons.find((season) => season.current) ?? seasons.sort((a, b) => b.year - a.year)[0]
+      : seasons.find((season) => season.year === this.configuredSeason);
+    if (!selected) {
+      const qualifier = this.configuredSeason == null ? "current" : `configured ${this.configuredSeason}`;
+      throw new Error(`API-Sports has no ${qualifier} ${leagueSlug} season`);
+    }
+    // `isCurrent` in our database means the active provider dataset. Preserve
+    // the provider dates/coverage while allowing a plan-limited historical
+    // season to be selected explicitly without presenting invented data.
+    return this.configuredSeason == null ? selected : { ...selected, current: true };
   }
 
   async getTeams(leagueSlug: "NFL" | "NCAAF", seasonYear: number): Promise<TeamDTO[]> {
