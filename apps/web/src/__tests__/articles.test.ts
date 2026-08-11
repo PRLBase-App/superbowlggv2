@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { editorialSeedArticles } from "../../../../packages/db/prisma/blog-seed";
-import { articleHeadings, articleReadingMinutes, articleSources, articleWordCount, slugify } from "@/lib/articles";
+import { articleHeadings, articleReadingMinutes, articleSources, articleWordCount, slugify } from "@/lib/article-utils";
 import { articleInputSchema } from "@/lib/article-validation";
 
 describe("editorial article helpers", () => {

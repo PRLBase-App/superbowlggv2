@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, Plus, Save, Trash2 } from "lucide-react";
 import { ArticleContent } from "@/components/article-content";
-import { articleReadingMinutes, articleWordCount, slugify } from "@/lib/articles";
+import { articleReadingMinutes, articleWordCount, slugify } from "@/lib/article-utils";
 
 export interface ArticleEditorValue {
   id?: string;

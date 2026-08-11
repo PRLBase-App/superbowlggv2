@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { slugify } from "@/lib/articles";
+import { slugify } from "@/lib/article-utils";
 
 function nodeText(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
