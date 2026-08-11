@@ -15,19 +15,22 @@ WORKDIR /app
 
 FROM base AS dependencies
 COPY --chown=node:node . .
-USER node
+# Keep dependency installation in the disposable build stage as root. The
+# workdir is created by the base image as root and pnpm needs to create its
+# temporary files at the workspace root. The final runtime still runs as the
+# unprivileged `node` user.
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @sbgg/db generate
 
 FROM dependencies AS builder
 # Build-only values let Next compile dynamic server routes without embedding
 # production credentials in an image layer.
-ENV NODE_ENV=production
-ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
-ENV APP_URL=https://superbowl.gg
-ENV AUTH_SECRET=build-only-secret-00000000000000000000000000000000
-ENV AUTH_BETTER_SECRET=build-only-better-secret-000000000000000000000000
-RUN pnpm --filter @sbgg/web build
+RUN NODE_ENV=production \
+  DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build \
+  APP_URL=https://superbowl.gg \
+  AUTH_SECRET=build-only-secret-00000000000000000000000000000000 \
+  AUTH_BETTER_SECRET=build-only-better-secret-000000000000000000000000 \
+  pnpm --filter @sbgg/web build
 
 FROM base AS runtime
 ENV NODE_ENV=production
