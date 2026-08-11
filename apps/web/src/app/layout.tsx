@@ -13,7 +13,7 @@ const oswald = Oswald({ subsets: ["latin"], variable: "--font-display" });
 const HUB_CANONICAL_PATHS = new Set([
   "/", "/games", "/predictions", "/marketplace", "/achievements", "/how-it-works",
   "/nfl", "/nfl/schedule", "/nfl/scores", "/nfl/standings", "/nfl/predictions", "/nfl/stats",
-  "/nfl/teams", "/nfl/players", "/nfl/injuries", "/nfl/playoffs", "/nfl/power-rankings",
+  "/nfl/news", "/nfl/teams", "/nfl/players", "/nfl/injuries", "/nfl/playoffs", "/nfl/power-rankings",
   "/super-bowl", "/super-bowl/predictions", "/super-bowl/odds", "/super-bowl/schedule",
   "/super-bowl/history", "/super-bowl/winners", "/super-bowl/mvp", "/super-bowl/records",
   "/super-bowl/locations", "/super-bowl/stadiums", "/affiliate-disclosure", "/responsible-gaming",
@@ -23,8 +23,8 @@ const HUB_CANONICAL_PATHS = new Set([
 export const metadata: Metadata = {
   metadataBase: new URL(`https://${brand.domain}`),
   title: {
-    default: "Superbowl.gg — NFL Predictions, Picks, Odds & Community",
-    template: "%s | Superbowl.gg",
+    default: "NFL Predictions, News, Stats & Super Bowl Odds",
+    template: "%s",
   },
   description:
     "American football prediction platform. NFL picks, predictions, odds, standings, player stats, community leaderboards and Super Bowl analysis.",
@@ -32,19 +32,19 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Superbowl.gg",
-    title: "Superbowl.gg — NFL Predictions, Picks, Odds & Community",
+    title: "NFL Predictions, News, Stats & Super Bowl Odds",
     description: "Predict football. Build your record. Beat the crowd.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Superbowl.gg — NFL Predictions, Picks, Odds & Community",
+    title: "NFL Predictions, News, Stats & Super Bowl Odds",
     description: "Predict football. Build your record. Beat the crowd.",
   },
   robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#020617",
+  themeColor: "#131520",
   width: "device-width",
   initialScale: 1,
 };
@@ -57,12 +57,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [user, requestHeaders] = await Promise.all([getSessionUser(), headers()]);
   const pathname = requestHeaders.get("x-sbgg-pathname") ?? "";
   const canonical = HUB_CANONICAL_PATHS.has(pathname) ? `https://${brand.domain}${pathname}` : null;
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Superbowl",
+    url: `https://${brand.domain}`,
+    sameAs: ["https://x.com/superbowldotgg"],
+  };
   return (
     <html lang="en" className={`${inter.variable} ${oswald.variable}`}>
       <head>{canonical ? <link rel="canonical" href={canonical} /> : null}</head>
       <body className="min-h-screen bg-brand-bg text-brand-text">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
         <SiteHeader user={user} />
-        <main className="mx-auto min-h-[60vh] max-w-7xl px-4 py-6 sm:px-6">{children}</main>
+        <main className="mx-auto min-h-[60vh] max-w-[1440px] px-4 py-6 pb-24 sm:px-6 md:pb-6">{children}</main>
         <SiteFooter />
       </body>
     </html>

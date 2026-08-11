@@ -27,7 +27,7 @@ export default async function NflTeamsPage() {
               <div className="grid gap-2 sm:grid-cols-2">
                 {rows.map((t) => (
                   <Link key={t.id} href={`/nfl/teams/${t.slug}`} className="card card-hover flex items-center gap-3">
-                    <TeamBadge abbr={t.abbreviation} color={t.primaryColor} size="sm" />
+                    <TeamBadge abbr={t.abbreviation} color={t.primaryColor} logoUrl={t.logoUrl} size="sm" />
                     <div>
                       <p className="text-sm font-semibold text-brand-text">{t.name}</p>
                       <p className="text-xs text-brand-muted">{t.stadium}</p>

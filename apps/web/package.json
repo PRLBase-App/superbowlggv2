@@ -22,6 +22,7 @@
     "@sbgg/seo": "workspace:*",
     "@sbgg/sports": "workspace:*",
     "better-auth": "^1.6.26",
+    "lucide-react": "^1.31.0",
     "next": "15.5.22",
     "react": "19.2.8",
     "react-dom": "19.2.8",

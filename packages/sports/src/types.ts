@@ -46,6 +46,8 @@ export interface TeamDTO {
   stadium: string | null;
   conference: string | null;
   division: string | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
   logoUrl: string | null;
 }
 

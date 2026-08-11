@@ -15,6 +15,7 @@ const publicPages: { path: string; frequency: SitemapEntry["changefreq"]; priori
   { path: "/achievements", frequency: "monthly", priority: 0.4 },
   { path: "/how-it-works", frequency: "monthly", priority: 0.4 },
   { path: "/nfl", frequency: "hourly", priority: 0.9 },
+  { path: "/nfl/news", frequency: "hourly", priority: 0.9 },
   { path: "/nfl/schedule", frequency: "hourly", priority: 0.8 },
   { path: "/nfl/scores", frequency: "hourly", priority: 0.8 },
   { path: "/nfl/standings", frequency: "daily", priority: 0.8 },

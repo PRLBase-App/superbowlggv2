@@ -18,6 +18,7 @@ const serverEnvSchema = z.object({
   AUTH_BETTER_SECRET: z.string().min(32),
   EMAIL_FROM: z.string().min(3).default("Superbowl <noreply@superbowl.gg>"),
   RESEND_API_KEY: optionalString,
+  SPORTS_DATA_PROVIDER: z.enum(["nflverse", "api-sports"]).default("nflverse"),
   API_SPORTS_KEY: optionalString,
   API_SPORTS_BASE_URL: z.string().url().default("https://v1.american-football.api-sports.io"),
   API_SPORTS_SEASON: z.preprocess(emptyToUndefined, z.coerce.number().int().min(2000).max(2100).optional()),

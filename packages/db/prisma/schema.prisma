@@ -138,6 +138,7 @@ enum SyncJobType {
   SYNC_INJURIES
   SYNC_ODDS
   SYNC_LIVE_GAMES
+  SYNC_NEWS
   SETTLE_PREDICTIONS
   PROCESS_GAMIFICATION
   SEND_NOTIFICATIONS
@@ -400,6 +401,7 @@ model Team {
   standings Standing[]
   favorites UserFavoriteTeam[]
   gameStats GameTeamStats[]
+  news      NewsItem[]
 
   @@index([leagueId])
   @@index([slug])
@@ -1160,6 +1162,27 @@ model ContentPage {
   published       Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model NewsItem {
+  id             String   @id @default(cuid())
+  source         String
+  sourceGuid     String   @unique
+  title          String
+  excerpt        String?
+  author         String?
+  url            String   @unique
+  sourceImageUrl String?
+  teamId         String?
+  publishedAt    DateTime
+  syncedAt       DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  team Team? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@index([publishedAt])
+  @@index([teamId, publishedAt])
 }
 
 model FeatureFlag {

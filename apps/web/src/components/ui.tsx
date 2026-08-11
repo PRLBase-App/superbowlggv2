@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 export function Card({ children, className = "", hover = false }: { children: ReactNode; className?: string; hover?: boolean }) {
@@ -28,17 +29,18 @@ export function SectionTitle({ children, sub }: { children: ReactNode; sub?: str
   );
 }
 
-/** Team identity block — abbreviation badge with team colors (no logos — legal-safe). */
-export function TeamBadge({ abbr, name, color, size = "md", link }: { abbr: string; name?: string; color?: string | null; size?: "sm" | "md" | "lg"; link?: string }) {
+/** Team identity block using provider-sourced marks for descriptive identification. */
+export function TeamBadge({ abbr, name, color, logoUrl, size = "md", link }: { abbr: string; name?: string; color?: string | null; logoUrl?: string | null; size?: "sm" | "md" | "lg"; link?: string }) {
   const box =
     size === "lg" ? "h-16 w-16 text-2xl" : size === "sm" ? "h-8 w-8 text-[11px]" : "h-11 w-11 text-sm";
+  const pixels = size === "lg" ? 64 : size === "sm" ? 32 : 44;
   const inner = (
     <span className="inline-flex items-center gap-2.5">
       <span
-        className={`${box} inline-flex items-center justify-center rounded-lg font-display font-bold text-white ring-1 ring-white/15`}
-        style={{ backgroundColor: color || "#1e293b" }}
+        className={`${box} relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-brand-border bg-white p-1 font-display font-bold text-white shadow-sm`}
+        style={logoUrl ? undefined : { backgroundColor: color || "#1e293b" }}
       >
-        {abbr}
+        {logoUrl ? <Image src={logoUrl} alt={`${name ?? abbr} logo`} width={pixels} height={pixels} className="h-full w-full object-contain" /> : abbr}
       </span>
       {name ? <span className="text-sm font-medium text-brand-text">{name}</span> : null}
     </span>

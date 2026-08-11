@@ -7,14 +7,17 @@ import {
   type SettlementResult,
   type SyncJobType,
 } from "@sbgg/db";
-import { getSportsProvider, type GameDTO, type SeasonDTO, type TeamDTO } from "@sbgg/sports";
+import { getSportsProvider, providerName, type GameDTO, type SeasonDTO, type TeamDTO } from "@sbgg/sports";
 import { getOddsProvider, type GameOdds, type OddsOutcome } from "@sbgg/odds";
 import { checkAchievements, grantXpAndCoins, recordSettlementRewards } from "@sbgg/gamification";
 import { settlePrediction } from "@sbgg/core";
+import { XMLParser } from "fast-xml-parser";
+import { matchNewsTeam } from "./news";
 
-const SPORTS_PROVIDER = "api-sports";
+const SPORTS_PROVIDER = providerName();
 const ODDS_PROVIDER = "the-odds-api";
 const SIX_HOURS = 6 * 60 * 60 * 1_000;
+const ESPN_NFL_RSS = "https://www.espn.com/espn/rss/nfl/news";
 
 export interface JobResult {
   processed: number;
@@ -112,7 +115,9 @@ async function uniqueTeamSlug(base: string, providerId: string, mappedTeamId: st
 
 async function upsertTeam(leagueId: string, team: TeamDTO): Promise<string> {
   const entityId = await mappedId(SPORTS_PROVIDER, "TEAM", team.providerId);
-  const mapped = entityId ? await prisma.team.findUnique({ where: { id: entityId } }) : null;
+  const mapped = entityId
+    ? await prisma.team.findUnique({ where: { id: entityId } })
+    : await prisma.team.findFirst({ where: { leagueId, OR: [{ abbreviation: team.abbreviation }, { name: team.name }] } });
   const slug = await uniqueTeamSlug(team.slug, team.providerId, mapped?.id ?? null);
   const data = {
     leagueId,
@@ -124,6 +129,8 @@ async function upsertTeam(leagueId: string, team: TeamDTO): Promise<string> {
     stadium: team.stadium,
     conference: team.conference,
     division: team.division,
+    primaryColor: team.primaryColor,
+    secondaryColor: team.secondaryColor,
     logoUrl: team.logoUrl,
   };
   const row = mapped
@@ -217,6 +224,13 @@ export async function syncGames(): Promise<JobResult> {
 
     const games = await provider.getSchedule("NFL", providerSeason.year);
     for (const game of games) await upsertGame(league.id, season.id, game);
+    const now = new Date();
+    const nextGame = games.filter((game) => new Date(game.scheduledAt) >= now).sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))[0];
+    const latestGame = games.filter((game) => new Date(game.scheduledAt) < now).sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt))[0];
+    await prisma.season.update({
+      where: { id: season.id },
+      data: { currentWeek: Math.max(1, nextGame?.week ?? latestGame?.week ?? 1) },
+    });
     await prisma.featureFlag.updateMany({ where: { key: "provider.sports" }, data: { enabled: true } });
     return { processed: games.length };
   });
@@ -286,16 +300,18 @@ export async function syncPlayers(): Promise<JobResult> {
       where: { provider: SPORTS_PROVIDER, entityType: "TEAM" },
       orderBy: { providerId: "asc" },
     });
-    const batch = rotatingBatch(teamMappings, 4);
+    const batch = SPORTS_PROVIDER === "nflverse" ? teamMappings : rotatingBatch(teamMappings, 4);
     let processed = 0;
     for (const teamMapping of batch) {
       const players = await provider.getPlayers(teamMapping.providerId, season.year);
       for (const player of players) {
         const entityId = await mappedId(SPORTS_PROVIDER, "PLAYER", player.providerId);
-        const mapped = entityId ? await prisma.player.findUnique({ where: { id: entityId } }) : null;
         const teamId = player.teamProviderId
           ? await mappedId(SPORTS_PROVIDER, "TEAM", player.teamProviderId)
           : teamMapping.entityId;
+        const mapped = entityId
+          ? await prisma.player.findUnique({ where: { id: entityId } })
+          : await prisma.player.findFirst({ where: { leagueId: league.id, teamId, name: player.name } });
         const slug = await uniquePlayerSlug(player.slug, player.providerId, mapped?.id ?? null);
         const data = {
           teamId,
@@ -326,6 +342,7 @@ export async function syncPlayers(): Promise<JobResult> {
 
 export async function syncInjuries(): Promise<JobResult> {
   return withLog("SYNC_INJURIES", SPORTS_PROVIDER, async () => {
+    if (SPORTS_PROVIDER === "nflverse") return { processed: 0 };
     const provider = getSportsProvider();
     const { league } = await currentSeason();
     const teamMappings = await prisma.providerEntityMapping.findMany({
@@ -695,6 +712,82 @@ export async function syncOdds(): Promise<JobResult> {
       }
     }
     if (processed > 0) await prisma.featureFlag.updateMany({ where: { key: "provider.odds" }, data: { enabled: true } });
+    return { processed };
+  });
+}
+
+type XmlNode = Record<string, unknown>;
+
+function xmlText(value: unknown): string | null {
+  if (typeof value === "string" || typeof value === "number") return String(value).trim() || null;
+  if (value && typeof value === "object") return xmlText((value as XmlNode)["#text"]);
+  return null;
+}
+
+/** Synchronize ESPN's published NFL RSS content without copying full articles. */
+export async function syncNews(): Promise<JobResult> {
+  return withLog("SYNC_NEWS", "espn-rss", async () => {
+    const response = await fetch(ESPN_NFL_RSS, {
+      headers: { "user-agent": "Superbowl.gg/2.0 (+https://superbowl.gg)" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!response.ok) throw new Error(`ESPN RSS request failed (${response.status})`);
+    const parsed = new XMLParser({ ignoreAttributes: false, trimValues: true }).parse(await response.text()) as XmlNode;
+    const channel = ((parsed.rss as XmlNode | undefined)?.channel ?? {}) as XmlNode;
+    const entries = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
+    const sourceImageUrl = xmlText((channel.image as XmlNode | undefined)?.url);
+    const teams = await prisma.team.findMany({
+      where: { league: { slug: "NFL" } },
+      select: { id: true, name: true, shortName: true, abbreviation: true },
+    });
+    let processed = 0;
+    for (const rawEntry of entries) {
+      const entry = rawEntry as XmlNode;
+      const title = xmlText(entry.title);
+      const excerpt = xmlText(entry.description);
+      const url = xmlText(entry.link);
+      const sourceGuid = xmlText(entry.guid) ?? url;
+      const published = xmlText(entry.pubDate);
+      if (!title || !url || !sourceGuid || !published) continue;
+      let destination: URL;
+      try {
+        destination = new URL(url);
+      } catch {
+        continue;
+      }
+      if (destination.hostname !== "espn.com" && !destination.hostname.endsWith(".espn.com")) continue;
+      const publishedAt = new Date(published);
+      if (Number.isNaN(publishedAt.getTime())) continue;
+      const teamId = matchNewsTeam(`${title} ${excerpt ?? ""}`, teams);
+      const data = {
+        source: "ESPN",
+        sourceGuid,
+        title,
+        excerpt,
+        author: xmlText(entry["dc:creator"]),
+        url,
+        sourceImageUrl,
+        teamId,
+        publishedAt,
+      };
+      const existing = await prisma.newsItem.findFirst({
+        where: { OR: [{ sourceGuid }, { url }] },
+        select: { id: true },
+      });
+      if (existing) {
+        await prisma.newsItem.update({
+          where: { id: existing.id },
+          data: {
+            ...data,
+            syncedAt: new Date(),
+          },
+        });
+      } else {
+        await prisma.newsItem.create({ data });
+      }
+      processed++;
+    }
     return { processed };
   });
 }

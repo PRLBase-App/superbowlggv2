@@ -8,6 +8,16 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: repoRoot,
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "a.espncdn.com" },
+      { protocol: "https", hostname: "static.www.nfl.com" },
+      { protocol: "https", hostname: "raw.githubusercontent.com" },
+      { protocol: "https", hostname: "github.com" },
+      { protocol: "https", hostname: "r2.thesportsdb.com" },
+      { protocol: "https", hostname: "upload.wikimedia.org" },
+    ],
+  },
   transpilePackages: ["@sbgg/core", "@sbgg/db", "@sbgg/sports", "@sbgg/odds", "@sbgg/gamification", "@sbgg/affiliate", "@sbgg/seo", "@sbgg/auth"],
   poweredByHeader: false,
   webpack(config, { isServer }) {

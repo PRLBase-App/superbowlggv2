@@ -64,7 +64,7 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
                   return (
                     <Link key={g.id} href={`/games/${g.id}`} className="card card-hover flex items-center justify-between !p-3">
                       <div className="flex items-center gap-3">
-                        <TeamBadge abbr={opp.abbreviation} color={opp.primaryColor} size="sm" />
+                        <TeamBadge abbr={opp.abbreviation} color={opp.primaryColor} logoUrl={opp.logoUrl} size="sm" />
                         <span className="text-sm text-brand-muted">{isHome ? "vs" : "@"} {opp.name}</span>
                         <Badge tone="slate">W{g.week}</Badge>
                       </div>

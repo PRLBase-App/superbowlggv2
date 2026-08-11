@@ -59,9 +59,9 @@ export default async function AdminGamesPage() {
               <tr key={g.id} className="hover:bg-brand-surface">
                 <td className="px-4 py-2.5">
                   <span className="flex items-center gap-2">
-                    <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} size="sm" />
+                    <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} logoUrl={g.awayTeam.logoUrl} size="sm" />
                     <span className="text-brand-muted">@</span>
-                    <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} size="sm" />
+                    <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} logoUrl={g.homeTeam.logoUrl} size="sm" />
                   </span>
                 </td>
                 <td className="px-4 py-2.5 text-brand-muted">W{g.week}</td>

@@ -118,7 +118,7 @@ export async function POST(request: Request) {
     }
     case "sync.request": {
       const parsed = z.object({ jobType: z.enum([
-        "SYNC_SCHEDULE", "SYNC_TEAMS", "SYNC_PLAYERS", "SYNC_STANDINGS", "SYNC_INJURIES", "SYNC_ODDS", "SYNC_LIVE_GAMES", "SETTLE_PREDICTIONS",
+        "SYNC_SCHEDULE", "SYNC_TEAMS", "SYNC_PLAYERS", "SYNC_STANDINGS", "SYNC_INJURIES", "SYNC_ODDS", "SYNC_LIVE_GAMES", "SYNC_NEWS", "SETTLE_PREDICTIONS",
       ]) }).safeParse(raw);
       if (!parsed.success) return NextResponse.json({ error: "Invalid sync job" }, { status: 400 });
       const existing = await prisma.integrationSyncLog.findFirst({
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
         select: { id: true },
       });
       if (existing) return NextResponse.json({ error: "This sync is already queued or running" }, { status: 409 });
-      const provider = parsed.data.jobType === "SYNC_ODDS" ? "the-odds-api" : "api-sports";
+      const provider = parsed.data.jobType === "SYNC_ODDS" ? "the-odds-api" : parsed.data.jobType === "SYNC_NEWS" ? "espn-rss" : "nflverse";
       const queued = await prisma.integrationSyncLog.create({
         data: { jobType: parsed.data.jobType, status: "PENDING", provider, metadata: { requestedBy: session.user.id, requestId } },
       });

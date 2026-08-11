@@ -43,9 +43,9 @@ export default async function PredictionPage({ params }: { params: Promise<{ id:
 
         <div className="mt-6 rounded-xl border border-brand-border bg-brand-surface2 p-5">
           <Link href={`/games/${p.gameId}`} className="flex items-center justify-between">
-            <TeamBadge abbr={p.game.awayTeam.abbreviation} color={p.game.awayTeam.primaryColor} size="md" name={p.game.awayTeam.name} />
+            <TeamBadge abbr={p.game.awayTeam.abbreviation} color={p.game.awayTeam.primaryColor} logoUrl={p.game.awayTeam.logoUrl} size="md" name={p.game.awayTeam.name} />
             <span className="scoreboard-num text-xl text-brand-muted">@</span>
-            <TeamBadge abbr={p.game.homeTeam.abbreviation} color={p.game.homeTeam.primaryColor} size="md" name={p.game.homeTeam.name} />
+            <TeamBadge abbr={p.game.homeTeam.abbreviation} color={p.game.homeTeam.primaryColor} logoUrl={p.game.homeTeam.logoUrl} size="md" name={p.game.homeTeam.name} />
           </Link>
           <p className="mt-3 text-center text-xs text-brand-muted">{kickoffDisplay(p.game.scheduledAt)} · NFL Week {p.game.week}</p>
         </div>

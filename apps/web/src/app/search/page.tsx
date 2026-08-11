@@ -69,7 +69,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
       {teams.length ? <ResultSection title="Teams">{teams.map((team) => (
         <Link key={team.id} href={`/nfl/teams/${team.slug}`} className="card card-hover flex items-center gap-3">
-          <TeamBadge abbr={team.abbreviation} color={team.primaryColor} size="sm" />
+          <TeamBadge abbr={team.abbreviation} color={team.primaryColor} logoUrl={team.logoUrl} size="sm" />
           <span><span className="block font-medium text-brand-text">{team.name}</span><span className="text-xs text-brand-muted">{team.conference ?? "NFL"} {team.division ?? ""}</span></span>
         </Link>
       ))}</ResultSection> : null}

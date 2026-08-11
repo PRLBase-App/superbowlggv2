@@ -23,7 +23,7 @@ describe("ApiSportsProvider season selection", () => {
     vi.stubGlobal("fetch", fetchMock);
     const provider = new ApiSportsProvider("test-key", "https://sports.example.test", 2024);
 
-    await expect(provider.getCurrentSeason("NFL")).resolves.toMatchObject({ year: 2024, current: true });
+    await expect(provider.getCurrentSeason("NFL")).resolves.toMatchObject({ year: 2024, current: false });
     expect(String(fetchMock.mock.calls[0]?.[0])).not.toContain("current=true");
   });
 });

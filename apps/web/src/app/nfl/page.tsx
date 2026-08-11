@@ -4,7 +4,7 @@ import { SeoHubShell, Breadcrumbs } from "@/components/seo-shell";
 import { Card, TeamBadge, Badge, EmptyState } from "@/components/ui";
 import { getGames, getStandings, getSeason, getInjuries } from "@/lib/data";
 import { kickoffDisplay } from "@sbgg/core";
-import { isHistoricalNflSeason, nflSeasonLabel } from "@/lib/season";
+import { currentNflSeasonYear, nflSeasonLabel } from "@/lib/season";
 
 export const metadata: Metadata = {
   title: "NFL — Schedule, Scores, Standings, Odds & Predictions",
@@ -16,12 +16,12 @@ export const revalidate = 60;
 export default async function NflHubPage() {
   const [games, standings, season, injuries] = await Promise.all([getGames({ status: "SCHEDULED", limit: 12 }), getStandings(), getSeason(), getInjuries()]);
   const week = season?.currentWeek ?? 1;
-  const label = season ? nflSeasonLabel(season.year) : "NFL";
-  const historical = season ? isHistoricalNflSeason(season.year) : false;
+  const label = season ? nflSeasonLabel(season.year) : `${currentNflSeasonYear()} NFL season`;
 
   const links = [
     { href: "/nfl/schedule", label: "Schedule" },
     { href: "/nfl/scores", label: "Scores" },
+    { href: "/nfl/news", label: "News" },
     { href: "/nfl/standings", label: "Standings" },
     { href: "/nfl/predictions", label: "Predictions" },
     { href: "/nfl/odds", label: "Odds" },
@@ -45,25 +45,25 @@ export default async function NflHubPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(nflSchema) }} />
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "NFL" }]} />
-      <SeoHubShell title="NFL" description={historical ? `${label}: provider-backed schedules, final scores, standings and injury observations. Current-season access is not configured.` : `The complete ${label.toLowerCase()}: schedules, scores, standings, odds, community predictions and analytics — all in one place. Week ${week} featured below.`} links={links}>
+      <SeoHubShell title={`${currentNflSeasonYear()} NFL`} description={`The complete ${label.toLowerCase()}: current news, schedules, scores, standings, odds, community predictions and analytics in one place. Week ${week} is featured below.`} links={links}>
         <div className="grid gap-6 lg:grid-cols-3">
           <section className="lg:col-span-2">
-            <h2 className="font-display mb-3 text-xl font-semibold">{historical ? `${season?.year} schedule archive` : `Upcoming games (Week ${week})`}</h2>
+            <h2 className="font-display mb-3 text-xl font-semibold">Upcoming games (Week {week})</h2>
             {games.length ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {games.map((g) => (
                   <Link key={g.id} href={`/games/${g.id}`} className="card card-hover">
                     <div className="flex items-center justify-between text-sm">
-                      <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} size="sm" />
+                      <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} logoUrl={g.awayTeam.logoUrl} size="sm" />
                       <span className="text-xs text-brand-muted">@</span>
-                      <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} size="sm" />
+                      <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} logoUrl={g.homeTeam.logoUrl} size="sm" />
                     </div>
                     <p className="mt-2 text-xs text-brand-muted">{kickoffDisplay(g.scheduledAt)}</p>
                   </Link>
                 ))}
               </div>
-            ) : <EmptyState title={historical ? "This archived season has no upcoming games" : "No upcoming games are available yet"} />}
-            <h2 className="font-display mb-3 mt-8 text-xl font-semibold">{historical ? "Archived injury observations" : "Injury watch"}</h2>
+            ) : <EmptyState title="The 2026 schedule is synchronizing" body="Historical games are not substituted for the current season." />}
+            <h2 className="font-display mb-3 mt-8 text-xl font-semibold">2026 injury watch</h2>
             <div className="grid gap-2 sm:grid-cols-2">
               {injuries.slice(0, 6).map((i) => (
                 <Card key={i.id} className="!p-3">
@@ -74,6 +74,7 @@ export default async function NflHubPage() {
                   <p className="mt-0.5 text-xs text-brand-muted">{i.player.team?.abbreviation} · {i.bodyPart}</p>
                 </Card>
               ))}
+              {!injuries.length ? <div className="sm:col-span-2"><EmptyState title="No current injury feed is available" body="The site will not display historical reports as current injuries." /></div> : null}
             </div>
           </section>
           <aside>
@@ -81,7 +82,7 @@ export default async function NflHubPage() {
             <div className="space-y-2">
               {standings.slice(0, 10).map((s) => (
                 <Link key={s.id} href={`/nfl/teams/${s.team.slug}`} className="card card-hover flex items-center justify-between !p-3 text-sm">
-                  <TeamBadge abbr={s.team.abbreviation} color={s.team.primaryColor} size="sm" />
+                  <TeamBadge abbr={s.team.abbreviation} color={s.team.primaryColor} logoUrl={s.team.logoUrl} size="sm" />
                   <span className="scoreboard-num text-brand-text">{s.wins}-{s.losses}{s.ties ? `-${s.ties}` : ""}</span>
                 </Link>
               ))}

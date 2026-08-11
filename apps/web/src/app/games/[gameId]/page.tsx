@@ -80,7 +80,7 @@ export default async function GameCenterPage({ params }: { params: Promise<{ gam
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
           <div className="flex items-center gap-4 sm:gap-8">
             <div className="text-center">
-              <TeamBadge abbr={game.awayTeam.abbreviation} color={game.awayTeam.primaryColor} size="lg" />
+              <TeamBadge abbr={game.awayTeam.abbreviation} color={game.awayTeam.primaryColor} logoUrl={game.awayTeam.logoUrl} size="lg" />
               <p className="mt-2 max-w-28 text-sm font-medium text-brand-text">{game.awayTeam.name}</p>
             </div>
             <span className="scoreboard-num text-4xl text-brand-text sm:text-5xl">
@@ -91,7 +91,7 @@ export default async function GameCenterPage({ params }: { params: Promise<{ gam
               {game.status === "FINAL" || game.status === "LIVE" ? game.homeScore : "—"}
             </span>
             <div className="text-center">
-              <TeamBadge abbr={game.homeTeam.abbreviation} color={game.homeTeam.primaryColor} size="lg" />
+              <TeamBadge abbr={game.homeTeam.abbreviation} color={game.homeTeam.primaryColor} logoUrl={game.homeTeam.logoUrl} size="lg" />
               <p className="mt-2 max-w-28 text-sm font-medium text-brand-text">{game.homeTeam.name}</p>
             </div>
           </div>

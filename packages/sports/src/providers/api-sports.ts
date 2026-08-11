@@ -184,10 +184,8 @@ export class ApiSportsProvider implements SportsProvider {
       const qualifier = this.configuredSeason == null ? "current" : `configured ${this.configuredSeason}`;
       throw new Error(`API-Sports has no ${qualifier} ${leagueSlug} season`);
     }
-    // `isCurrent` in our database means the active provider dataset. Preserve
-    // the provider dates/coverage while allowing a plan-limited historical
-    // season to be selected explicitly without presenting invented data.
-    return this.configuredSeason == null ? selected : { ...selected, current: true };
+    // A plan-limited archive must never become the product's current season.
+    return selected;
   }
 
   async getTeams(leagueSlug: "NFL" | "NCAAF", seasonYear: number): Promise<TeamDTO[]> {
@@ -209,6 +207,8 @@ export class ApiSportsProvider implements SportsProvider {
         stadium: text(row.stadium),
         conference: text(row.conference),
         division: text(row.division),
+        primaryColor: null,
+        secondaryColor: null,
         logoUrl: text(row.logo),
       }];
     });

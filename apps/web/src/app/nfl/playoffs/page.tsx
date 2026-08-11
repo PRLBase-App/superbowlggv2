@@ -34,7 +34,7 @@ export default async function NflPlayoffsPage() {
                     <Card key={s.id} className="flex items-center justify-between !p-3">
                       <div className="flex items-center gap-3">
                         <span className="font-display w-6 text-lg font-bold text-brand-primary">{i + 1}</span>
-                        <TeamBadge abbr={s.team.abbreviation} color={s.team.primaryColor} size="sm" />
+                        <TeamBadge abbr={s.team.abbreviation} color={s.team.primaryColor} logoUrl={s.team.logoUrl} size="sm" />
                         <span className="text-sm font-medium text-brand-text">{s.team.name}</span>
                       </div>
                       <span className="scoreboard-num text-sm text-brand-muted">{s.wins}-{s.losses}</span>

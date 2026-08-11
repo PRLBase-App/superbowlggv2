@@ -11,7 +11,8 @@ Copy `.env.example` locally. Never commit `.env` and never put provider/auth key
 | `AUTH_BETTER_SECRET` | yes | independent minimum 32-character Better Auth secret |
 | `EMAIL_FROM` | yes for email | verified sender identity |
 | `RESEND_API_KEY` | yes for auth email | verification/reset delivery |
-| `API_SPORTS_KEY` | yes for NFL data | API-Sports American Football |
+| `SPORTS_DATA_PROVIDER` | yes | `nflverse` (default) or `api-sports` |
+| `API_SPORTS_KEY` | only for `api-sports` | API-Sports American Football |
 | `API_SPORTS_BASE_URL` | no | provider base override |
 | `API_SPORTS_SEASON` | no | explicitly select an accessible real season when the provider plan excludes the current season |
 | `THE_ODDS_API_KEY` | yes for odds | The Odds API |
@@ -28,4 +29,4 @@ Copy `.env.example` locally. Never commit `.env` and never put provider/auth key
 | storage variables | no | reserved for future uploaded assets |
 | geo/AI variables | no | disabled by default; no fabricated fallback |
 
-The user-selected production sports provider is API-Sports, so the original `SPORTSDATAIO_*` proposal is intentionally not used.
+The production default is nflverse, which publishes real NFL schedules, rosters, team data and statistics without an API key. API-Sports remains available for explicitly selected historical or licensed coverage; it is never used as a fabricated fallback.

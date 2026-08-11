@@ -56,7 +56,7 @@ export default async function NflStandingsPage() {
                       <tr key={s.id} className="hover:bg-brand-surface">
                         <td className="px-4 py-2.5">
                           <Link href={`/nfl/teams/${s.team.slug}`} className="flex items-center gap-2.5">
-                            <TeamBadge abbr={s.team.abbreviation} color={s.team.primaryColor} size="sm" />
+                            <TeamBadge abbr={s.team.abbreviation} color={s.team.primaryColor} logoUrl={s.team.logoUrl} size="sm" />
                             <span className="font-medium text-brand-text">{s.team.name}</span>
                           </Link>
                         </td>

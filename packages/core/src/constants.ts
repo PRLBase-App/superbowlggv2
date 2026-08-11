@@ -10,20 +10,19 @@ export const brand = {
   supportEmail: "support@superbowl.gg",
   legalCompanyName: "Superbowl.gg",
   socialLinks: {
-    twitter: "https://twitter.com/superbowlgg",
-    discord: "https://discord.gg/superbowlgg",
+    x: "https://x.com/superbowldotgg",
   },
   colors: {
-    primary: "#38BDF8", // electric sky — primary accent
-    secondary: "#818CF8", // indigo — secondary accent
-    background: "#020617", // deep near-black navy
-    surface: "#0B1220", // slightly lighter card
-    text: "#F8FAFC",
-    mutedText: "#94A3B8",
-    border: "#1E293B",
-    success: "#22C55E", // green for wins / positive
-    danger: "#EF4444", // red only for losses / errors
-    warning: "#F59E0B",
+    primary: "#3E7DD5",
+    secondary: "#208B8E",
+    background: "#F2F3F7",
+    surface: "#FFFFFF",
+    text: "#131520",
+    mutedText: "#616A75",
+    border: "#DFE1EC",
+    success: "#16865A",
+    danger: "#D14343",
+    warning: "#D68A11",
   },
 };
 

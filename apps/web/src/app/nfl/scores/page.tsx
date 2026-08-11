@@ -39,11 +39,11 @@ export default async function NflScoresPage() {
               {liveGames.map((g) => (
                 <Link key={g.id} href={`/games/${g.id}`} className="card card-hover">
                   <div className="flex items-center justify-between">
-                    <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} size="sm" />
+                    <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} logoUrl={g.awayTeam.logoUrl} size="sm" />
                     <span className="scoreboard-num text-2xl text-brand-text">{g.awayScore}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} size="sm" />
+                    <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} logoUrl={g.homeTeam.logoUrl} size="sm" />
                     <span className="scoreboard-num text-2xl text-brand-text">{g.homeScore}</span>
                   </div>
                   <p className="mt-2 text-xs text-brand-muted">{g.quarter}Q · {g.clock}</p>
@@ -62,11 +62,11 @@ export default async function NflScoresPage() {
               {finalGames.map((g) => (
                 <Link key={g.id} href={`/games/${g.id}`} className="card card-hover">
                   <div className="flex items-center justify-between">
-                    <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} size="sm" />
+                    <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} logoUrl={g.awayTeam.logoUrl} size="sm" />
                     <span className="scoreboard-num text-xl text-brand-text">{g.awayScore}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} size="sm" />
+                    <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} logoUrl={g.homeTeam.logoUrl} size="sm" />
                     <span className="scoreboard-num text-xl text-brand-text">{g.homeScore}</span>
                   </div>
                   <p className="mt-2 flex items-center justify-between text-xs text-brand-muted">
@@ -85,9 +85,9 @@ export default async function NflScoresPage() {
             {upcoming.map((g) => (
               <Link key={g.id} href={`/games/${g.id}`} className="card card-hover">
                 <div className="flex items-center justify-between text-sm">
-                  <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} size="sm" />
+                  <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} logoUrl={g.awayTeam.logoUrl} size="sm" />
                   <span className="text-brand-muted">@</span>
-                  <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} size="sm" />
+                  <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} logoUrl={g.homeTeam.logoUrl} size="sm" />
                 </div>
                 <p className="mt-2 text-xs text-brand-muted">{kickoffDisplay(g.scheduledAt)}</p>
               </Link>

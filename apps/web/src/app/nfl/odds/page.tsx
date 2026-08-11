@@ -43,9 +43,9 @@ export default async function NflOddsPage() {
                 <article key={game.id} className="card space-y-4">
                   <Link href={`/games/${game.id}`} className="flex flex-wrap items-center justify-between gap-3">
                     <span className="flex items-center gap-3">
-                      <TeamBadge abbr={game.awayTeam.abbreviation} color={game.awayTeam.primaryColor} size="sm" />
+                      <TeamBadge abbr={game.awayTeam.abbreviation} color={game.awayTeam.primaryColor} logoUrl={game.awayTeam.logoUrl} size="sm" />
                       <span className="text-brand-muted">@</span>
-                      <TeamBadge abbr={game.homeTeam.abbreviation} color={game.homeTeam.primaryColor} size="sm" />
+                      <TeamBadge abbr={game.homeTeam.abbreviation} color={game.homeTeam.primaryColor} logoUrl={game.homeTeam.logoUrl} size="sm" />
                     </span>
                     <span className="text-xs text-brand-primary">Open Game Center →</span>
                   </Link>

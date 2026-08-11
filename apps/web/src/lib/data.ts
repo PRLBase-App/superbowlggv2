@@ -1,13 +1,15 @@
 import { prisma, type GameStatus, type LeagueSlug, type PredictionMarket, type Prisma } from "@sbgg/db";
 import { trendingScore } from "@sbgg/gamification";
+import { currentNflSeasonYear } from "./season";
 
 /** Server-side data access for pages. All queries hit the real DB. */
 
 export async function getGames(opts: { week?: number; status?: GameStatus; league?: LeagueSlug; limit?: number } = {}) {
   const season = await getSeason(opts.league ?? "NFL");
+  if (!season) return [];
   return prisma.game.findMany({
     where: {
-      ...(season ? { seasonId: season.id } : {}),
+      seasonId: season.id,
       ...(opts.week ? { week: opts.week } : {}),
       ...(opts.status ? { status: opts.status } : {}),
       ...(opts.league ? { league: { slug: opts.league } } : {}),
@@ -58,11 +60,12 @@ export async function getTeams() {
 }
 
 export async function getTeam(slug: string) {
+  const season = await getSeason();
   return prisma.team.findUnique({
     where: { slug },
     include: {
-      homeGames: { include: { awayTeam: true, homeTeam: true }, orderBy: { scheduledAt: "desc" }, take: 20 },
-      awayGames: { include: { homeTeam: true, awayTeam: true }, orderBy: { scheduledAt: "desc" }, take: 20 },
+      homeGames: { where: season ? { seasonId: season.id } : { id: "__no_current_season__" }, include: { awayTeam: true, homeTeam: true }, orderBy: { scheduledAt: "desc" }, take: 20 },
+      awayGames: { where: season ? { seasonId: season.id } : { id: "__no_current_season__" }, include: { homeTeam: true, awayTeam: true }, orderBy: { scheduledAt: "desc" }, take: 20 },
       players: { take: 20 },
       standings: { include: { season: true } },
     },
@@ -88,15 +91,16 @@ export async function getStandings() {
 
 export async function getSeason(league: LeagueSlug = "NFL") {
   return prisma.season.findFirst({
-    where: { league: { slug: league } },
-    orderBy: [{ isCurrent: "desc" }, { year: "desc" }],
+    where: { league: { slug: league }, year: currentNflSeasonYear() },
+    orderBy: { year: "desc" },
   });
 }
 
 export async function getInjuries() {
   const season = await getSeason();
+  if (!season) return [];
   return prisma.injury.findMany({
-    where: season ? { reportedAt: { gte: season.startDate, lte: season.endDate } } : {},
+    where: { reportedAt: { gte: season.startDate, lte: season.endDate } },
     include: { player: { include: { team: true } } },
     orderBy: { reportedAt: "desc" },
     take: 40,
@@ -104,7 +108,7 @@ export async function getInjuries() {
 }
 
 export async function getPredictionFeed(opts: { filter?: string; market?: PredictionMarket; gameId?: string; userId?: string; limit?: number } = {}) {
-  const where: Prisma.PredictionWhereInput = { isPublic: true };
+  const where: Prisma.PredictionWhereInput = { isPublic: true, game: { season: { year: currentNflSeasonYear() } } };
   if (opts.market) where.marketType = opts.market;
   if (opts.gameId) where.gameId = opts.gameId;
   if (opts.userId) where.userId = opts.userId;
@@ -160,7 +164,7 @@ export async function getProfileByUsername(username: string) {
 export async function getLeaderboard(period: "weekly" | "monthly" | "season" | "allTime" = "allTime", limit = 20) {
   const now = new Date();
   const currentSeason = period === "season"
-    ? await prisma.season.findFirst({ where: { league: { slug: "NFL" } }, orderBy: [{ isCurrent: "desc" }, { year: "desc" }], select: { startDate: true } })
+    ? await prisma.season.findFirst({ where: { league: { slug: "NFL" }, year: currentNflSeasonYear() }, select: { startDate: true } })
     : null;
   const since = period === "weekly"
     ? new Date(now.getTime() - 7 * 86_400_000)
@@ -237,6 +241,19 @@ export async function getAffiliateOffers() {
     include: { partner: true },
     orderBy: { createdAt: "desc" },
   });
+}
+
+export async function getNews(limit = 12, skip = 0) {
+  return prisma.newsItem.findMany({
+    include: { team: true },
+    orderBy: { publishedAt: "desc" },
+    take: Math.min(50, Math.max(1, limit)),
+    skip: Math.max(0, skip),
+  });
+}
+
+export async function getNewsCount() {
+  return prisma.newsItem.count();
 }
 
 export async function getNotifications(userId: string) {

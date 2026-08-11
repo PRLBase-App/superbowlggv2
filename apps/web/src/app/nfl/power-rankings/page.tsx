@@ -27,7 +27,7 @@ export default async function NflPowerRankingsPage() {
             <Link key={s.id} href={`/nfl/teams/${s.team.slug}`} className="card card-hover flex items-center justify-between !p-3">
               <div className="flex items-center gap-3">
                 <span className={`font-display w-8 text-lg font-bold ${i < 8 ? "text-brand-primary" : "text-brand-muted"}`}>{i + 1}</span>
-                <TeamBadge abbr={s.team.abbreviation} color={s.team.primaryColor} size="sm" />
+                <TeamBadge abbr={s.team.abbreviation} color={s.team.primaryColor} logoUrl={s.team.logoUrl} size="sm" />
                 <span className="text-sm font-medium text-brand-text">{s.team.name}</span>
               </div>
               <div className="text-right text-xs text-brand-muted">

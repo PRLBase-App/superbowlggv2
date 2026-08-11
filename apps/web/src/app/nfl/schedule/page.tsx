@@ -58,9 +58,9 @@ export default async function NflSchedulePage({ searchParams }: { searchParams: 
                   <tr key={g.id} className="hover:bg-brand-surface">
                     <td className="px-4 py-3">
                       <Link href={`/games/${g.id}`} className="flex items-center gap-3">
-                        <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} size="sm" />
+                        <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} logoUrl={g.awayTeam.logoUrl} size="sm" />
                         <span className="text-brand-muted">@</span>
-                        <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} size="sm" />
+                        <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} logoUrl={g.homeTeam.logoUrl} size="sm" />
                       </Link>
                     </td>
                     <td className="hidden px-4 py-3 text-brand-muted md:table-cell">{kickoffDisplay(g.scheduledAt)}</td>

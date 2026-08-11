@@ -46,11 +46,11 @@ export default async function NflWeekPage({ params }: { params: Promise<{ week: 
                 <div className="flex items-center justify-between">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-4">
-                      <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} size="sm" />
+                      <TeamBadge abbr={g.awayTeam.abbreviation} color={g.awayTeam.primaryColor} logoUrl={g.awayTeam.logoUrl} size="sm" />
                       <span className="scoreboard-num text-brand-text">{g.awayScore}</span>
                     </div>
                     <div className="flex items-center justify-between gap-4">
-                      <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} size="sm" />
+                      <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} logoUrl={g.homeTeam.logoUrl} size="sm" />
                       <span className="scoreboard-num text-brand-text">{g.homeScore}</span>
                     </div>
                   </div>

@@ -1,6 +1,7 @@
 import { env } from "@sbgg/core";
 import { Prisma, prisma, type SyncJobType } from "@sbgg/db";
 import { SeoService } from "@sbgg/seo";
+import { providerName } from "@sbgg/sports";
 import {
   processReferrals,
   sendFollowNotifications,
@@ -8,6 +9,7 @@ import {
   syncGames,
   syncInjuries,
   syncLiveGames,
+  syncNews,
   syncOdds,
   syncPlayers,
   syncStandings,
@@ -125,7 +127,7 @@ async function runDue(): Promise<JobResult[]> {
   const configuration = env();
   const sportsJobs: SyncJobType[] = ["SYNC_TEAMS", "SYNC_SCHEDULE", "SYNC_STANDINGS", "SYNC_PLAYERS", "SYNC_INJURIES", "SYNC_LIVE_GAMES"];
 
-  if (configuration.API_SPORTS_KEY) {
+  if (providerName() !== "unconfigured") {
     await runScheduled("SYNC_TEAMS", 7 * DAY, "teams", syncTeams, results);
     await runScheduled("SYNC_SCHEDULE", 6 * HOUR, "schedule", syncGames, results);
     await runScheduled("SYNC_STANDINGS", 12 * HOUR, "standings", syncStandings, results);
@@ -133,8 +135,8 @@ async function runDue(): Promise<JobResult[]> {
     await runScheduled("SYNC_INJURIES", 6 * HOUR, "injuries", syncInjuries, results);
     await runScheduled("SYNC_LIVE_GAMES", 15 * MINUTE, "live games", syncLiveGames, results);
   } else {
-    console.warn("[worker] API_SPORTS_KEY is not configured; live sports synchronization is unavailable");
-    await Promise.all(sportsJobs.map((jobType) => rejectRequestedJob(jobType, "API_SPORTS_KEY is not configured")));
+    console.warn("[worker] sports data provider is not configured; synchronization is unavailable");
+    await Promise.all(sportsJobs.map((jobType) => rejectRequestedJob(jobType, "Sports data provider is not configured")));
   }
 
   if (configuration.THE_ODDS_API_KEY) {
@@ -148,6 +150,7 @@ async function runDue(): Promise<JobResult[]> {
   await runScheduled("SETTLE_PREDICTIONS", 15 * MINUTE, "settlement", settlePredictions, results);
   await runScheduled("PROCESS_GAMIFICATION", 30 * MINUTE, "referrals", processReferrals, results);
   await runScheduled("SEND_NOTIFICATIONS", 15 * MINUTE, "notifications", sendFollowNotifications, results);
+  await runScheduled("SYNC_NEWS", 30 * MINUTE, "NFL news", syncNews, results);
 
   const seo = new SeoService();
   try {
@@ -229,6 +232,7 @@ const commands: Record<string, () => Promise<JobResult | JobResult[]>> = {
   injuries: syncInjuries,
   live: syncLiveGames,
   odds: syncOdds,
+  news: syncNews,
   settle: settlePredictions,
   referrals: processReferrals,
   notifications: sendFollowNotifications,
