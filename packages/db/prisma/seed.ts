@@ -7,6 +7,7 @@
  * an authenticated administrator.
  */
 import { Prisma, PrismaClient } from "@prisma/client";
+import { editorialAuthor, editorialSeedArticles } from "./blog-seed";
 
 const prisma = new PrismaClient();
 
@@ -77,6 +78,27 @@ async function main() {
     update: { value: "provider-only", group: "integrations" },
     create: { key: "data.provenance", value: "provider-only", group: "integrations" },
   });
+
+  const articleAuthor = await prisma.articleAuthor.upsert({
+    where: { slug: editorialAuthor.slug },
+    update: {},
+    create: editorialAuthor,
+  });
+
+  for (const article of editorialSeedArticles) {
+    const { sourceLinks, publishedAt, ...content } = article;
+    await prisma.article.upsert({
+      where: { slug: article.slug },
+      update: {},
+      create: {
+        ...content,
+        sourceLinks: sourceLinks as Prisma.InputJsonValue,
+        publishedAt: new Date(publishedAt),
+        status: "PUBLISHED",
+        authorId: articleAuthor.id,
+      },
+    });
+  }
 }
 
 main()

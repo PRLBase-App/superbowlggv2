@@ -4,8 +4,8 @@ import { prisma } from "@sbgg/db";
 import { Badge, EmptyState, SectionTitle, TeamBadge } from "@/components/ui";
 
 export const metadata: Metadata = {
-  title: "Search NFL Games, Teams, Players & Predictors",
-  description: "Search Superbowl.gg for NFL games, teams, players, community predictors and public picks.",
+  title: "Search NFL Games, Teams, Players, Articles & Predictors",
+  description: "Search Superbowl.gg for NFL games, teams, players, original analysis, community predictors and public picks.",
   robots: { index: false, follow: true },
 };
 
@@ -15,7 +15,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const { q: rawQuery } = await searchParams;
   const query = rawQuery?.trim().slice(0, 80) ?? "";
   const hasQuery = query.length >= 2;
-  const [games, teams, players, profiles, predictions] = hasQuery
+  const [games, teams, players, profiles, predictions, articles] = hasQuery
     ? await Promise.all([
         prisma.game.findMany({
           where: { OR: [
@@ -49,14 +49,30 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           orderBy: { publishedAt: "desc" },
           take: 8,
         }),
+        prisma.article.findMany({
+          where: {
+            status: "PUBLISHED",
+            publishedAt: { lte: new Date() },
+            OR: [
+              { title: { contains: query, mode: "insensitive" } },
+              { excerpt: { contains: query, mode: "insensitive" } },
+              { body: { contains: query, mode: "insensitive" } },
+              { category: { contains: query, mode: "insensitive" } },
+              { tags: { has: query } },
+            ],
+          },
+          include: { author: true },
+          orderBy: { publishedAt: "desc" },
+          take: 8,
+        }),
       ])
-    : [[], [], [], [], []] as const;
-  const total = games.length + teams.length + players.length + profiles.length + predictions.length;
+    : [[], [], [], [], [], []] as const;
+  const total = games.length + teams.length + players.length + profiles.length + predictions.length + articles.length;
 
   return (
     <div className="space-y-8">
       <div>
-        <SectionTitle sub="Games, teams, players, predictors and public picks">Search Superbowl.gg</SectionTitle>
+        <SectionTitle sub="Games, teams, players, original articles, predictors and public picks">Search Superbowl.gg</SectionTitle>
         <form action="/search" role="search" className="flex max-w-2xl gap-2">
           <label htmlFor="site-search" className="sr-only">Search</label>
           <input id="site-search" name="q" type="search" className="input" defaultValue={query} minLength={2} maxLength={80} placeholder="Search the NFL community…" required />
@@ -85,6 +101,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         <Link key={game.id} href={`/games/${game.id}`} className="card card-hover flex items-center justify-between gap-3">
           <span className="font-medium text-brand-text">{game.awayTeam.name} at {game.homeTeam.name}</span>
           <Badge tone={game.status === "LIVE" ? "red" : game.status === "FINAL" ? "slate" : "blue"}>{game.status}</Badge>
+        </Link>
+      ))}</ResultSection> : null}
+
+      {articles.length ? <ResultSection title="Original NFL analysis">{articles.map((article) => (
+        <Link key={article.id} href={`/blog/${article.slug}`} className="card card-hover">
+          <span className="font-medium text-brand-text">{article.title}</span>
+          <span className="ml-2 text-xs text-brand-muted">{article.category} · {article.author.name}</span>
+          <p className="mt-2 line-clamp-2 text-xs leading-5 text-brand-muted">{article.excerpt}</p>
         </Link>
       ))}</ResultSection> : null}
 

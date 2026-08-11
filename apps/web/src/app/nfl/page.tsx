@@ -22,6 +22,7 @@ export default async function NflHubPage() {
     { href: "/nfl/schedule", label: "Schedule" },
     { href: "/nfl/scores", label: "Scores" },
     { href: "/nfl/news", label: "News" },
+    { href: "/blog", label: "Analysis" },
     { href: "/nfl/standings", label: "Standings" },
     { href: "/nfl/predictions", label: "Predictions" },
     { href: "/nfl/odds", label: "Odds" },

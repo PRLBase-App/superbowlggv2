@@ -10,5 +10,6 @@ export function GET() {
     "/sitemap-players.xml",
     "/sitemap-predictions.xml",
     "/sitemap-super-bowl.xml",
+    "/sitemap-blog.xml",
   ]);
 }

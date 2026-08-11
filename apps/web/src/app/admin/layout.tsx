@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin/ads", label: "Ads" },
   { href: "/admin/gamification", label: "Gamification" },
   { href: "/admin/content", label: "Content" },
+  { href: "/admin/articles", label: "Articles" },
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/seo", label: "SEO" },
   { href: "/admin/audit-log", label: "Audit log" },

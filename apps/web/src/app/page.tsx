@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, BarChart3, CheckCircle2, Newspaper, ShieldCheck, Trophy, Zap } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpenCheck, CheckCircle2, Newspaper, ShieldCheck, Trophy, Zap } from "lucide-react";
 import { getSessionUser } from "@/lib/session";
 import { getAffiliateOffers, getGames, getLeaderboard, getMarketplaceOffers, getNews, getPredictionFeed, getSeason, getStandings, getTeams } from "@/lib/data";
 import { Badge, Card, EmptyState, SectionTitle, TeamBadge } from "@/components/ui";
@@ -10,6 +10,8 @@ import { TeamMarquee } from "@/components/team-marquee";
 import { gameStatusLabel, kickoffDisplay } from "@sbgg/core";
 import { SUPER_BOWLS } from "@/lib/super-bowl-data";
 import { currentNflSeasonYear } from "@/lib/season";
+import { getPublishedArticles } from "@/lib/articles";
+import { ArticleCard } from "@/components/article-card";
 
 export const metadata: Metadata = {
   title: "NFL Predictions, News, Stats & Super Bowl Odds",
@@ -39,7 +41,7 @@ const FAQ = [
 
 export default async function HomePage() {
   const currentYear = currentNflSeasonYear();
-  const [user, games, liveGames, trending, leaderboard, offers, affiliateOffers, standings, season, teams, news] = await Promise.all([
+  const [user, games, liveGames, trending, leaderboard, offers, affiliateOffers, standings, season, teams, news, editorial] = await Promise.all([
     getSessionUser(),
     getGames({ status: "SCHEDULED", limit: 8 }),
     getGames({ status: "LIVE", limit: 4 }),
@@ -51,6 +53,7 @@ export default async function HomePage() {
     getSeason(),
     getTeams(),
     getNews(5),
+    getPublishedArticles({ limit: 3 }),
   ]);
 
   const today = new Date().toDateString();
@@ -108,6 +111,14 @@ export default async function HomePage() {
           </div>
         ) : <EmptyState title="NFL news is synchronizing" body="Real ESPN headlines will appear after the first successful RSS update." />}
         <div className="mt-4 text-right"><Link href="/nfl/news" className="inline-flex items-center gap-2 text-sm font-bold text-brand-primary hover:underline">Read the full NFL news board <ArrowRight className="h-4 w-4" /></Link></div>
+      </section>
+
+      <section>
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+          <div><p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-brand-primary"><BookOpenCheck className="h-4 w-4" /> Superbowl.gg Editorial</p><h2 className="mt-2 font-display text-2xl font-semibold text-brand-text sm:text-3xl"><Link href="/blog" className="hover:text-brand-primary">Original NFL analysis</Link></h2><p className="mt-1 text-sm text-brand-muted">Source-backed guides and research written for this site—not syndicated headlines.</p></div>
+          <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-bold text-brand-primary hover:underline">Open the full research library <ArrowRight className="h-4 w-4" /></Link>
+        </div>
+        {editorial.articles.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{editorial.articles.map((article) => <ArticleCard key={article.id} article={article} />)}</div> : <EmptyState title="Editorial library is preparing" body="Original articles will appear after the production content migration completes." />}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">

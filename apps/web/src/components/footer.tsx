@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-react";
 const NFL_LINKS = [
   { href: "/nfl", label: "2026 NFL hub" },
   { href: "/nfl/news", label: "Latest NFL reporting" },
+  { href: "/blog", label: "Original NFL analysis" },
   { href: "/nfl/schedule", label: "Full season schedule" },
   { href: "/nfl/scores", label: "Game scores" },
   { href: "/nfl/standings", label: "AFC and NFC standings" },
@@ -18,6 +19,7 @@ const COMMUNITY_LINKS = [
   { href: "/leaderboard", label: "Predictor rankings" },
   { href: "/how-it-works", label: "Prediction guide" },
   { href: "/super-bowl", label: "Super Bowl LXI guide" },
+  { href: "/blog/feed.xml", label: "NFL analysis RSS feed" },
 ];
 
 const LEGAL = [

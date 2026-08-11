@@ -12,7 +12,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const oswald = Oswald({ subsets: ["latin"], variable: "--font-display" });
 
 const HUB_CANONICAL_PATHS = new Set([
-  "/", "/games", "/predictions", "/marketplace", "/achievements", "/how-it-works",
+  "/", "/games", "/predictions", "/marketplace", "/achievements", "/how-it-works", "/blog",
   "/nfl", "/nfl/schedule", "/nfl/scores", "/nfl/standings", "/nfl/predictions", "/nfl/stats",
   "/nfl/news", "/nfl/teams", "/nfl/players", "/nfl/injuries", "/nfl/playoffs", "/nfl/power-rankings",
   "/super-bowl", "/super-bowl/predictions", "/super-bowl/odds", "/super-bowl/schedule",

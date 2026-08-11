@@ -194,6 +194,12 @@ enum SeoRedirectType {
   REMOVE
 }
 
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 // ─────────────────────────────────────────────────────────────
 // AUTH (Better Auth)
 // ─────────────────────────────────────────────────────────────
@@ -1163,6 +1169,48 @@ model ContentPage {
   published       Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model ArticleAuthor {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  name       String
+  type       String   @default("ORGANIZATION") // PERSON | ORGANIZATION
+  role       String?
+  bio        String
+  avatarUrl  String?
+  websiteUrl String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  articles Article[]
+}
+
+model Article {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  title          String
+  excerpt        String
+  body           String        @db.Text
+  category       String
+  tags           String[]      @default([])
+  status         ArticleStatus @default(DRAFT)
+  featured       Boolean       @default(false)
+  heroImageUrl   String?
+  heroImageAlt   String?
+  seoTitle       String?
+  seoDescription String?
+  sourceLinks    Json?
+  authorId       String
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  author ArticleAuthor @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([status, publishedAt])
+  @@index([category, status])
+  @@index([authorId, publishedAt])
 }
 
 model NewsItem {

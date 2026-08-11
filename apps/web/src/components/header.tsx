@@ -11,6 +11,7 @@ const NAV = [
   { href: "/games", label: "Games" },
   { href: "/predictions", label: "Predictions" },
   { href: "/nfl/news", label: "NFL News" },
+  { href: "/blog", label: "Analysis" },
   { href: "/nfl/stats", label: "Stats" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/marketplace", label: "Marketplace" },
