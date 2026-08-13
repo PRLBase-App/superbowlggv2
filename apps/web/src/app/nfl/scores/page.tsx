@@ -4,7 +4,7 @@ import { SeoHubShell, Breadcrumbs } from "@/components/seo-shell";
 import { Badge, TeamBadge, EmptyState } from "@/components/ui";
 import { getGames, getSeason } from "@/lib/data";
 import { kickoffDisplay } from "@sbgg/core";
-import { isHistoricalNflSeason, nflSeasonLabel } from "@/lib/season";
+import { isHistoricalNflSeason, nflSeasonLabel, gameWeekLabel } from "@/lib/season";
 
 export async function generateMetadata(): Promise<Metadata> {
   const season = await getSeason();
@@ -71,7 +71,7 @@ export default async function NflScoresPage() {
                   </div>
                   <p className="mt-2 flex items-center justify-between text-xs text-brand-muted">
                     <Badge tone="slate">Final</Badge>
-                    <span>W{g.week}</span>
+                    <span>{gameWeekLabel(g.seasonType, g.week)}</span>
                   </p>
                 </Link>
               ))}

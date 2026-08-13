@@ -4,6 +4,7 @@ import { SeoHubShell, Breadcrumbs } from "@/components/seo-shell";
 import { EmptyState } from "@/components/ui";
 import { getPredictionFeed } from "@/lib/data";
 import { timeAgo } from "@sbgg/core";
+import { gameWeekLabel } from "@/lib/season";
 
 export const metadata: Metadata = {
   title: "NFL Predictions & Picks — Community Picks for Every Game",
@@ -30,7 +31,7 @@ export default async function NflPredictionsPage() {
                   <span className="scoreboard-num text-brand-primary">{p.oddsAtCreation}</span>
                 </div>
                 <Link href={`/games/${p.gameId}`} className="mt-1 block text-sm text-brand-muted hover:text-brand-primary">
-                  {p.game.awayTeam.abbreviation} @ {p.game.homeTeam.abbreviation} · W{p.game.week}
+                  {p.game.awayTeam.abbreviation} @ {p.game.homeTeam.abbreviation} · {gameWeekLabel(p.game.seasonType, p.game.week)}
                 </Link>
                 <Link href={`/predictions/${p.id}`} className="mt-2 block text-sm font-semibold text-brand-text hover:text-brand-primary">
                   {p.marketType === "MONEYLINE" ? "ML" : p.marketType === "SPREAD" ? "Spread" : p.marketType === "TOTAL" ? "Total" : "Prop"}: {p.selection === "home" ? p.game.homeTeam.abbreviation : p.selection === "away" ? p.game.awayTeam.abbreviation : p.selection}{p.line != null ? ` (${p.line})` : ""}

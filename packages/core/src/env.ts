@@ -37,6 +37,7 @@ const serverEnvSchema = z.object({
   SEMRUSH_MAX_UNITS_PER_RUN: z.coerce.number().int().min(1).max(1_000).default(100),
   SEMRUSH_CACHE_DAYS: z.coerce.number().int().min(1).max(365).default(30),
   ADMIN_EMAIL: optionalEmail,
+  ADMIN_EMAILS: z.preprocess(emptyToUndefined, z.string().optional()),
   STORAGE_ENDPOINT: optionalUrl,
   STORAGE_REGION: optionalString,
   STORAGE_BUCKET: optionalString,
@@ -76,6 +77,17 @@ let cached: ServerEnv | undefined;
 export function env(): ServerEnv {
   if (!cached) cached = loadEnv();
   return cached;
+}
+
+/** Configured administrator emails — the union of ADMIN_EMAILS (comma-separated) and ADMIN_EMAIL. */
+export function adminEmails(configuration: ServerEnv = env()): Set<string> {
+  const emails = new Set<string>();
+  for (const raw of (configuration.ADMIN_EMAILS ?? "").split(",")) {
+    const email = raw.trim().toLowerCase();
+    if (email) emails.add(email);
+  }
+  if (configuration.ADMIN_EMAIL) emails.add(configuration.ADMIN_EMAIL.toLowerCase());
+  return emails;
 }
 
 export const publicEnv = {

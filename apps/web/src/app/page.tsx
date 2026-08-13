@@ -9,7 +9,7 @@ import { NewsCard } from "@/components/news-card";
 import { TeamMarquee } from "@/components/team-marquee";
 import { gameStatusLabel, kickoffDisplay } from "@sbgg/core";
 import { SUPER_BOWLS } from "@/lib/super-bowl-data";
-import { currentNflSeasonYear } from "@/lib/season";
+import { currentNflSeasonYear, gameWeekLabel, gameWeekTitle } from "@/lib/season";
 import { getPublishedArticles } from "@/lib/articles";
 import { ArticleCard } from "@/components/article-card";
 
@@ -126,7 +126,7 @@ export default async function HomePage() {
           <SectionTitle sub="Real matchups and provider updates">{liveGames.length ? "Games in progress" : todayGames.length ? "Today's NFL games" : "Next on the 2026 schedule"}</SectionTitle>
           {showGames.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{showGames.slice(0, 6).map((game) => (
             <Link key={game.id} href={`/games/${game.id}`} className="card card-hover group !p-0">
-              <div className="flex items-center justify-between border-b border-brand-border px-4 py-3"><Badge tone={game.status === "LIVE" ? "red" : "blue"}>{gameStatusLabel(game.status)}</Badge><span className="text-xs font-semibold text-brand-muted">Week {game.week}</span></div>
+              <div className="flex items-center justify-between border-b border-brand-border px-4 py-3"><Badge tone={game.status === "LIVE" ? "red" : game.seasonType === "PRE" ? "indigo" : "blue"}>{gameStatusLabel(game.status)}</Badge><span className="text-xs font-semibold text-brand-muted">{gameWeekTitle(game.seasonType, game.week)}</span></div>
               <div className="space-y-3 p-4">
                 <div className="flex items-center justify-between"><TeamBadge abbr={game.awayTeam.abbreviation} color={game.awayTeam.primaryColor} logoUrl={game.awayTeam.logoUrl} name={game.awayTeam.shortName} size="sm" /><span className="scoreboard-num text-lg">{game.status === "LIVE" || game.status === "FINAL" ? game.awayScore : "—"}</span></div>
                 <div className="flex items-center justify-between"><TeamBadge abbr={game.homeTeam.abbreviation} color={game.homeTeam.primaryColor} logoUrl={game.homeTeam.logoUrl} name={game.homeTeam.shortName} size="sm" /><span className="scoreboard-num text-lg">{game.status === "LIVE" || game.status === "FINAL" ? game.homeScore : "—"}</span></div>
@@ -146,7 +146,7 @@ export default async function HomePage() {
           <SectionTitle sub="Community analysis ranked by engagement and recency"><Link href="/predictions" className="text-brand-text hover:text-brand-primary">Trending predictions</Link></SectionTitle>
           <div className="space-y-3">{trending.slice(0, 4).map((prediction) => (
             <Link key={prediction.id} href={`/predictions/${prediction.id}`} className="card card-hover flex items-center justify-between gap-4">
-              <div><p className="text-sm font-bold text-brand-text">@{prediction.user.profile?.username ?? "predictor"}</p><p className="mt-1 text-xs text-brand-muted">{prediction.game.awayTeam.abbreviation} at {prediction.game.homeTeam.abbreviation} · Week {prediction.game.week}</p><p className="mt-2 text-sm font-semibold text-brand-primary">{prediction.marketType}: {prediction.selection}{prediction.line != null ? ` (${prediction.line})` : ""}</p></div>
+              <div><p className="text-sm font-bold text-brand-text">@{prediction.user.profile?.username ?? "predictor"}</p><p className="mt-1 text-xs text-brand-muted">{prediction.game.awayTeam.abbreviation} at {prediction.game.homeTeam.abbreviation} · {gameWeekLabel(prediction.game.seasonType, prediction.game.week)}</p><p className="mt-2 text-sm font-semibold text-brand-primary">{prediction.marketType}: {prediction.selection}{prediction.line != null ? ` (${prediction.line})` : ""}</p></div>
               <div className="text-right"><Badge tone="blue">{prediction.confidence}</Badge><p className="mt-2 text-xs text-brand-muted">Odds {prediction.oddsAtCreation}</p></div>
             </Link>
           ))}{!trending.length ? <EmptyState title="No 2026 predictions yet" body="The feed opens as soon as current-season games are available." /> : null}</div>

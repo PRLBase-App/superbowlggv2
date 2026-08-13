@@ -5,6 +5,7 @@ import { SeoHubShell, Breadcrumbs } from "@/components/seo-shell";
 import { Badge, TeamBadge, EmptyState } from "@/components/ui";
 import { getTeam } from "@/lib/data";
 import { kickoffDisplay, gameStatusLabel } from "@sbgg/core";
+import { gameWeekLabel } from "@/lib/season";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -66,7 +67,7 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
                       <div className="flex items-center gap-3">
                         <TeamBadge abbr={opp.abbreviation} color={opp.primaryColor} logoUrl={opp.logoUrl} size="sm" />
                         <span className="text-sm text-brand-muted">{isHome ? "vs" : "@"} {opp.name}</span>
-                        <Badge tone="slate">W{g.week}</Badge>
+                        <Badge tone="slate">{gameWeekLabel(g.seasonType, g.week)}</Badge>
                       </div>
                       <div className="text-right">
                         {g.status === "FINAL" || g.status === "LIVE" ? (

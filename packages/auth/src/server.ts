@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "@sbgg/db";
-import { env } from "@sbgg/core";
+import { adminEmails, env } from "@sbgg/core";
 import { telegramLogin } from "./telegram";
 
 function escapeHtml(value: string): string {
@@ -92,7 +92,7 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     expiresIn: 60 * 60,
     afterEmailVerification: async (user) => {
-      const isConfiguredAdmin = env().ADMIN_EMAIL?.toLowerCase() === user.email.toLowerCase();
+      const isConfiguredAdmin = user.email ? adminEmails().has(user.email) : false;
       await prisma.user.update({
         where: { id: user.id },
         data: {

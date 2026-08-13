@@ -1,10 +1,10 @@
-import { prisma, type GameStatus, type LeagueSlug, type PredictionMarket, type Prisma } from "@sbgg/db";
+import { prisma, type GameStatus, type LeagueSlug, type PredictionMarket, type Prisma, type SeasonType } from "@sbgg/db";
 import { trendingScore } from "@sbgg/gamification";
 import { currentNflSeasonYear } from "./season";
 
 /** Server-side data access for pages. All queries hit the real DB. */
 
-export async function getGames(opts: { week?: number; status?: GameStatus; league?: LeagueSlug; limit?: number } = {}) {
+export async function getGames(opts: { week?: number; status?: GameStatus; league?: LeagueSlug; seasonType?: SeasonType; limit?: number } = {}) {
   const season = await getSeason(opts.league ?? "NFL");
   if (!season) return [];
   return prisma.game.findMany({
@@ -12,6 +12,7 @@ export async function getGames(opts: { week?: number; status?: GameStatus; leagu
       seasonId: season.id,
       ...(opts.week ? { week: opts.week } : {}),
       ...(opts.status ? { status: opts.status } : {}),
+      ...(opts.seasonType ? { seasonType: opts.seasonType } : {}),
       ...(opts.league ? { league: { slug: opts.league } } : {}),
     },
     include: { homeTeam: true, awayTeam: true, season: true },
@@ -280,7 +281,7 @@ export async function getReferral(userId: string) {
 }
 
 export async function getAdminStats() {
-  const [users, dau, wau, mau, predictions, games, clicks, conversions, impressions, redemptions, seoKeywords] = await Promise.all([
+  const [users, dau, wau, mau, predictions, games, clicks, conversions, impressions, redemptions, seoKeywords, recentUsers] = await Promise.all([
     prisma.user.count(),
     prisma.analyticsEvent.count({ where: { createdAt: { gte: new Date(Date.now() - 86400000) } } }),
     prisma.analyticsEvent.count({ where: { createdAt: { gte: new Date(Date.now() - 7 * 86400000) } } }),
@@ -292,6 +293,19 @@ export async function getAdminStats() {
     prisma.adImpression.count(),
     prisma.marketplaceRedemption.count(),
     prisma.seoKeyword.count({ where: { source: "SEMRUSH" } }),
+    prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        _count: { select: { predictions: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
   ]);
-  return { users, dau, wau, mau, predictions, games, clicks, conversions, impressions, redemptions, seoKeywords };
+  return { users, dau, wau, mau, predictions, games, clicks, conversions, impressions, redemptions, seoKeywords, recentUsers };
 }

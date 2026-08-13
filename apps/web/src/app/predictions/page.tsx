@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getPredictionFeed } from "@/lib/data";
 import { Badge, SectionTitle, EmptyState } from "@/components/ui";
 import { timeAgo } from "@sbgg/core";
+import { gameWeekLabel } from "@/lib/season";
 import type { PredictionMarket } from "@sbgg/db";
 
 export const metadata: Metadata = {
@@ -51,7 +52,7 @@ export default async function PredictionsPage({ searchParams }: { searchParams: 
                 </Badge>
               </div>
               <span className="text-sm text-brand-muted">
-                {p.game.awayTeam.abbreviation} @ {p.game.homeTeam.abbreviation} · W{p.game.week}
+                {p.game.awayTeam.abbreviation} @ {p.game.homeTeam.abbreviation} · {gameWeekLabel(p.game.seasonType, p.game.week)}
               </span>
               <p className="mt-2 text-sm font-semibold text-brand-text">
                 {p.marketType === "MONEYLINE" ? "ML" : p.marketType === "SPREAD" ? "SPR" : p.marketType === "TOTAL" ? "TOT" : "PROP"}:

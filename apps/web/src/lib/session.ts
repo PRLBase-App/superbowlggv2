@@ -1,15 +1,29 @@
 import { headers } from "next/headers";
 import { auth } from "@sbgg/auth";
 import { prisma } from "@sbgg/db";
+import { adminEmails } from "@sbgg/core";
 
 export async function getSession() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) return null;
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true, status: true, isAdmin: true, emailVerified: true },
+    select: { role: true, status: true, isAdmin: true, emailVerified: true, email: true },
   });
   if (!user || user.status !== "ACTIVE" || !user.emailVerified) return null;
+
+  // Bootstrap: elevate accounts whose email matches a configured admin email.
+  // Mirrors the afterEmailVerification hook, but also covers accounts that
+  // were already verified before the admin list changed.
+  if (!user.isAdmin && user.email && adminEmails().has(user.email)) {
+    const elevated = await prisma.user.update({
+      where: { id: session.user.id },
+      data: { isAdmin: true, role: "SUPER_ADMIN" },
+      select: { role: true, status: true, isAdmin: true, emailVerified: true, email: true },
+    });
+    return { ...session, user: { ...session.user, ...elevated } };
+  }
+
   return { ...session, user: { ...session.user, ...user } };
 }
 

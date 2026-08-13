@@ -18,6 +18,16 @@ import type {
 type CsvRow = Record<string, string>;
 
 const RELEASE_BASE = "https://github.com/nflverse/nflverse-data/releases/download";
+const ESPN_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+const ESPN_USER_AGENT = "okhttp/4.9.0";
+
+/** ESPN team IDs are stable across seasons; values are canonical nflverse abbreviations. */
+const ESPN_NFL_TEAM_IDS: Record<number, string> = {
+  1: "ATL", 2: "BUF", 3: "CHI", 4: "CIN", 5: "CLE", 6: "DAL", 7: "DEN", 8: "DET",
+  9: "GB", 10: "TEN", 11: "IND", 12: "KC", 13: "LV", 14: "LAR", 15: "MIA", 16: "MIN",
+  17: "NE", 18: "NO", 19: "NYG", 20: "NYJ", 21: "PHI", 22: "ARI", 23: "PIT", 24: "LAC",
+  25: "SF", 26: "SEA", 27: "TB", 28: "WAS", 29: "CAR", 30: "JAX", 33: "BAL", 34: "HOU",
+};
 const CURRENT_NFL_TEAMS = new Set([
   "ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE",
   "DAL", "DEN", "DET", "GB", "HOU", "IND", "JAX", "KC",
@@ -154,6 +164,88 @@ export class NflverseProvider implements SportsProvider {
     return rows;
   }
 
+  /**
+   * Preseason schedule from ESPN's public scoreboard API. nflverse's games.csv
+   * covers regular and postseason games only, so preseason games are merged in
+   * from ESPN for the current season. Best-effort: any fetch/parse failure
+   * returns an empty list so the regular-season sync is never blocked.
+   */
+  private async preseasonSchedule(seasonYear: number): Promise<GameDTO[]> {
+    const cacheKey = `espn:scoreboard:${seasonYear}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.rows as unknown as GameDTO[];
+    if (seasonYear !== currentNflSeasonYear(this.now())) return [];
+
+    const url = `${ESPN_SCOREBOARD}?dates=${seasonYear}0801-${seasonYear}0905`;
+    try {
+      const response = await this.fetcher(url, {
+        headers: { "user-agent": ESPN_USER_AGENT },
+        cache: "no-store",
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!response.ok) return [];
+      const payload = (await response.json()) as { events?: unknown[] };
+      const games = (payload.events ?? [])
+        .map((event) => this.mapEspnPreseasonGame(event, seasonYear))
+        .filter((game): game is GameDTO => game !== null);
+      this.cache.set(cacheKey, { expiresAt: Date.now() + 10 * 60_000, rows: games as unknown as CsvRow[] });
+      return games;
+    } catch {
+      return [];
+    }
+  }
+
+  private mapEspnPreseasonGame(event: unknown, seasonYear: number): GameDTO | null {
+    const eventObject = event as {
+      id?: string;
+      date?: string;
+      week?: { number?: number };
+      season?: { type?: number };
+      status?: { type?: { state?: string } };
+      competitions?: Array<{
+        venue?: { fullName?: string };
+        broadcasts?: Array<{ names?: string[] }>;
+        competitors?: Array<{ homeAway?: string; team?: { id?: string; abbreviation?: string }; score?: string }>;
+      }>;
+    };
+    if (!eventObject.id || !eventObject.date) return null;
+    if (eventObject.season?.type !== 1) return null; // 1 = preseason
+
+    const competitors = eventObject.competitions?.[0]?.competitors ?? [];
+    const home = competitors.find((entry) => entry.homeAway === "home");
+    const away = competitors.find((entry) => entry.homeAway === "away");
+    const homeAbbr = home?.team?.id ? ESPN_NFL_TEAM_IDS[Number(home.team.id)] : undefined;
+    const awayAbbr = away?.team?.id ? ESPN_NFL_TEAM_IDS[Number(away.team.id)] : undefined;
+    if (!homeAbbr || !awayAbbr) return null;
+
+    const state = eventObject.status?.type?.state;
+    const status: GameDTO["status"] =
+      state === "post" ? "FINAL" : state === "in" ? "LIVE" : "SCHEDULED";
+    const broadcasts = eventObject.competitions?.[0]?.broadcasts ?? [];
+    const broadcast = broadcasts.flatMap((entry) => entry.names ?? []).join(", ") || null;
+
+    return {
+      providerId: `espn-${eventObject.id}`,
+      leagueSlug: "NFL",
+      seasonYear,
+      week: eventObject.week?.number ?? 0,
+      stage: "Preseason",
+      seasonType: "PRE",
+      homeTeamProviderId: homeAbbr,
+      awayTeamProviderId: awayAbbr,
+      homeTeamName: homeAbbr,
+      awayTeamName: awayAbbr,
+      scheduledAt: eventObject.date,
+      status,
+      homeScore: Number(home?.score ?? 0) || 0,
+      awayScore: Number(away?.score ?? 0) || 0,
+      quarter: null,
+      clock: null,
+      venue: eventObject.competitions?.[0]?.venue?.fullName ?? null,
+      broadcast,
+    };
+  }
+
   async getLeagues(): Promise<LeagueDTO[]> {
     const season = await this.getCurrentSeason("NFL");
     return [{
@@ -241,12 +333,17 @@ export class NflverseProvider implements SportsProvider {
 
   async getSchedule(leagueSlug: "NFL" | "NCAAF", seasonYear: number, week?: number): Promise<GameDTO[]> {
     if (leagueSlug !== "NFL") return [];
-    const rows = await this.csv("schedules/games.csv", 4 * 60_000);
-    return rows.flatMap((row) => {
+    const [rows, preseason] = await Promise.all([
+      this.csv("schedules/games.csv", 4 * 60_000),
+      this.preseasonSchedule(seasonYear),
+    ]);
+    const games = rows.flatMap((row) => {
       const game = this.mapGame(row);
       if (!game || game.seasonYear !== seasonYear || (week != null && game.week !== week)) return [];
       return [game];
     });
+    const preseasonFiltered = preseason.filter((game) => week == null || game.week === week);
+    return [...preseasonFiltered, ...games];
   }
 
   async getGames(leagueSlug: "NFL" | "NCAAF", status?: GameDTO["status"]): Promise<GameDTO[]> {

@@ -7,16 +7,18 @@ import { Badge, Card, SectionTitle, TeamBadge, OddsCell, EmptyState } from "@/co
 import { PredictionBuilder } from "@/components/prediction-builder";
 import { LiveGamePoller } from "@/components/live-game-poller";
 import { kickoffDisplay, gameStatusLabel } from "@sbgg/core";
+import { gameWeekHref, gameWeekTitle } from "@/lib/season";
 
 export async function generateMetadata({ params }: { params: Promise<{ gameId: string }> }): Promise<Metadata> {
   const { gameId } = await params;
   const g = await getGameWithOdds(gameId);
   if (!g) return { title: "Game not found" };
+  const weekTitle = gameWeekTitle(g.seasonType, g.week);
   return {
     title: `${g.awayTeam.name} vs ${g.homeTeam.name} Predictions, Odds & Picks`,
-    description: `NFL Week ${g.week}: ${g.awayTeam.name} at ${g.homeTeam.name}. Community predictions, odds, stats and injury report.`,
+    description: `${weekTitle}: ${g.awayTeam.name} at ${g.homeTeam.name}. Community predictions, odds, stats and injury report.`,
     alternates: { canonical: `/games/${g.id}` },
-    openGraph: { title: `${g.awayTeam.abbreviation} @ ${g.homeTeam.abbreviation} — Game Center`, description: `NFL Week ${g.week} matchup, odds and community picks on Superbowl.gg` },
+    openGraph: { title: `${g.awayTeam.abbreviation} @ ${g.homeTeam.abbreviation} — Game Center`, description: `${weekTitle} matchup, odds and community picks on Superbowl.gg` },
   };
 }
 
@@ -97,7 +99,7 @@ export default async function GameCenterPage({ params }: { params: Promise<{ gam
           </div>
           <div className="flex flex-col items-center gap-2 text-center">
             <Badge tone={game.status === "LIVE" ? "red" : game.status === "FINAL" ? "slate" : "blue"}>{gameStatusLabel(game.status)}</Badge>
-            <p className="text-sm text-brand-muted">NFL Week {game.week} · {kickoffDisplay(game.scheduledAt)}</p>
+            <p className="text-sm text-brand-muted">{gameWeekTitle(game.seasonType, game.week)} · {kickoffDisplay(game.scheduledAt)}</p>
             <p className="text-xs text-brand-muted">{game.venue || game.homeTeam.stadium}{game.broadcast ? ` · ${game.broadcast}` : ""}</p>
             <LiveGamePoller gameId={game.id} />
           </div>
@@ -275,8 +277,8 @@ export default async function GameCenterPage({ params }: { params: Promise<{ gam
             <div className="space-y-1 text-sm">
               <Link href={`/nfl/teams/${game.homeTeam.slug}`} className="block text-brand-primary hover:underline">{game.homeTeam.name} — schedule & stats</Link>
               <Link href={`/nfl/teams/${game.awayTeam.slug}`} className="block text-brand-primary hover:underline">{game.awayTeam.name} — schedule & stats</Link>
-              <Link href={`/nfl/week/${game.week}`} className="block text-brand-primary hover:underline">NFL Week {game.week} — all games</Link>
-              <Link href={`/nfl/week/${game.week}/predictions`} className="block text-brand-primary hover:underline">Week {game.week} predictions</Link>
+              <Link href={gameWeekHref(game.seasonType, game.week)} className="block text-brand-primary hover:underline">{gameWeekTitle(game.seasonType, game.week)} — all games</Link>
+              <Link href={`${gameWeekHref(game.seasonType, game.week)}${game.seasonType === "PRE" ? "" : "/predictions"}`} className="block text-brand-primary hover:underline">{gameWeekTitle(game.seasonType, game.week)} predictions</Link>
               <Link href="/nfl/standings" className="block text-brand-primary hover:underline">NFL standings</Link>
             </div>
           </section>

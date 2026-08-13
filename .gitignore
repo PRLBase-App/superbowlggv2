@@ -39,3 +39,9 @@ data/seo/*.json
 !data/seo/semrush-existing-rankings.csv
 !data/seo/semrush-existing-rankings.json
 !data/seo/semrush-opportunities.csv
+
+# local design references + local-only helpers (not part of the deployed app)
+example.PNG
+favicon_io/
+/logo.svg
+apps/worker/sync-local.ts

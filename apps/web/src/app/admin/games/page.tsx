@@ -3,6 +3,7 @@ import { prisma } from "@sbgg/db";
 import { Badge, TeamBadge } from "@/components/ui";
 import { AdminTableActions } from "@/components/admin-table-actions";
 import { gameStatusLabel } from "@sbgg/core";
+import { gameWeekLabel } from "@/lib/season";
 
 export const metadata: Metadata = { title: "Admin · Games" };
 
@@ -64,7 +65,7 @@ export default async function AdminGamesPage() {
                     <TeamBadge abbr={g.homeTeam.abbreviation} color={g.homeTeam.primaryColor} logoUrl={g.homeTeam.logoUrl} size="sm" />
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-brand-muted">W{g.week}</td>
+                <td className="px-4 py-2.5 text-brand-muted">{gameWeekLabel(g.seasonType, g.week)}</td>
                 <td className="px-4 py-2.5"><Badge tone={g.status === "LIVE" ? "red" : g.status === "FINAL" ? "slate" : "blue"}>{gameStatusLabel(g.status)}</Badge></td>
                 <td className="scoreboard-num px-4 py-2.5 text-right">{g.awayScore}–{g.homeScore}</td>
                 <td className="px-4 py-2.5">
