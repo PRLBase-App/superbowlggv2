@@ -636,4 +636,88 @@ Historical spreads help answer specific questions: what did a documented market 
 
 They cannot remove uncertainty from a future game. Read them alongside the official [Super Bowl history](/super-bowl/history), current team data and an explicit methodology. If a line lacks a bookmaker or timestamp, treat it as an archive reference rather than a precision measurement.`,
   },
+  {
+    slug: "nfl-byes-rest-advantage-explained",
+    title: "Byes, Rest and Travel: What the Schedule Actually Gives a Team",
+    excerpt: "How bye weeks, extra rest days and travel distance are measured in NFL analysis — and why each is weaker evidence than commonly assumed.",
+    category: "Stats Lab",
+    tags: ["NFL bye week", "rest advantage", "NFL travel", "schedule analysis"],
+    featured: false,
+    seoTitle: "NFL Byes, Rest and Travel Advantage: Measured Honestly",
+    seoDescription: "How analysts measure bye-week and rest edges in the NFL, what the research actually shows, and why travel claims need context.",
+    publishedAt: "2026-08-21T12:00:00.000Z",
+    sourceLinks: [
+      { title: "NFL Football Operations — how the NFL schedule is made", url: "https://operations.nfl.com/calendar-events/nfl-schedule/making-the-schedule" },
+      { title: "NFL.com — official 2026 schedule", url: "https://www.nfl.com/schedules/2026/by-team" },
+      { title: "NFL Football Operations — 2026–2027 important dates", url: "https://operations.nfl.com/calendar-events/nfl-important-dates" },
+    ],
+    body: `Rest and travel are the most quoted — and most misused — context factors in NFL analysis. "They're coming off a bye" and "that's a long trip west" are treated as predictions when they are only conditions. This article explains how each factor is measured, what a fair comparison looks like, and where the evidence is weaker than the confidence of the commentary.
+
+## Byes: what the bye actually changes
+
+Each NFL club plays 17 games across 18 weeks, so every team gets one bye. The bye's measurable effects are straightforward: an extra week of physical recovery, additional preparation time for the next opponent, and a change in the rhythm of a season. What the bye does not change is talent, coaching or a team's underlying efficiency profile.
+
+The commonly cited "bye advantage" comes from historical win-rate differences for bye teams, especially against opponents who also played the previous week. Two cautions apply before quoting those numbers. First, the samples are drawn from seasons with different bye placements and rest structures, so the aggregate blends different situations. Second, bye advantage is not symmetric: a bye before a road game against a strong opponent is a different situation from a bye before a home game against a struggling one, and the raw historical rate does not separate those cases.
+
+A defensible way to use bye information is as a modifier on matchup analysis, not as a standalone signal. If your model already accounts for team strength, location and injuries, the remaining bye effect is a small adjustment — not a reason to override the rest of the evaluation.
+
+## Rest days: measure the differential, not the total
+
+Rest analysis should compare the two teams, because both clubs played last week. The meaningful quantity is the rest differential: Team A had seven days between games while Team B had ten, or one club comes off a Thursday game into a Sunday opponent that played Monday. The differential frames who is comparatively fresher; the absolute number does not.
+
+The 2026 schedule creates several extreme cases worth tracking. Short-week sequences after international games — the league plays in Melbourne, Rio, London, Paris, Madrid, Munich and Mexico City this season — combine travel, time-zone change and compressed recovery. Those games are exactly where a naive "road team is tired" claim fails: the home team in an international game often travels too, and kickoff body-clock time matters as much as distance.
+
+## Travel: distance is easy, context is hard
+
+Travel distance is the easiest number to compute and the least informative on its own. What matters is the combination of distance, direction (west-to-east travel is harder on body clocks), time-zone shift, days of adaptation and whether the team stayed on the road for consecutive games. A three-time-zone trip with a normal Sunday kickoff after a full week is a different burden from a Thursday game following the same flight.
+
+The schedule's international stretch makes this concrete. A club flying to Munich in November faces a nine-hour shift; its opponent may arrive from a different timezone entirely. Analysts who quote only "Team X travels 4,500 miles" are reporting trivia. The measurable claim is: kickoff occurs at an unusual body-clock time for both teams, and each club's prior-week location determines who adapted more.
+
+## How to keep these factors honest
+
+Three practices separate careful analysis from narrative. First, always compare: rest differential, travel asymmetry and bye placement for both clubs, never one side alone. Second, separate confirmed facts from interpretation — the schedule and injury report are facts; "they'll be flat after the trip" is a hypothesis. Third, respect sample limits: a handful of international games per season is a small dataset, and conclusions drawn from it should be held loosely.
+
+None of this makes byes, rest and travel irrelevant. It makes them context — inputs that adjust a matchup evaluation by a modest amount, rather than the headline of a prediction. When you read a claim that a bye or a flight will decide a game, check whether the analysis compared both teams and whether the effect size cited survives contact with a full-season sample. The [Superbowl.gg game center](/games) keeps schedule, rest and location data current so those comparisons take seconds, not hours.`,
+  },
+  {
+    slug: "nfl-injury-reports-what-doubtful-and-questionable-mean",
+    title: "NFL Injury Reports Explained: DNP, Limited, Questionable and Doubtful",
+    excerpt: "How the league's injury-report system works, what each designation actually tells you, and how to read reports without overreacting.",
+    category: "Injuries",
+    tags: ["NFL injury report", "questionable designation", "DNP", "injury analysis"],
+    featured: false,
+    seoTitle: "NFL Injury Report Designations: DNP, Limited, Questionable, Doubtful",
+    seoDescription: "What NFL injury report practice designations and game statuses mean, when they are published, and how to interpret them responsibly.",
+    publishedAt: "2026-08-21T12:30:00.000Z",
+    sourceLinks: [
+      { title: "NFL Football Operations — injury report procedures", url: "https://operations.nfl.com/for-fans/football-safety/injury-report-policy" },
+      { title: "NFL.com — official 2026 schedule", url: "https://www.nfl.com/schedules/2026/by-team" },
+      { title: "NFL Football Operations — 2026–2027 important dates", url: "https://operations.nfl.com/calendar-events/nfl-important-dates" },
+    ],
+    body: `Injury reports are the NFL's most misunderstood public document. They are compliance filings, not medical assessments — and reading them well means understanding what the league requires clubs to disclose, when, and what each label does and does not tell you.
+
+## What clubs must report and when
+
+Once the regular season begins, clubs submit practice participation reports on a schedule set by the league based on when each team plays. A club playing Sunday reports Wednesday through Friday; a Thursday team's windows compress earlier in the week. Each report classifies every player with a reportable injury as Did Not Participate (DNP), Limited Participation, or Full Participation, together with the injury itself and, later in the week, a game-status label.
+
+The game-status labels are the ones most quoted: Questionable means the player is uncertain to play; Doubtful means unlikely (roughly a 25% historical play rate); Out means ruled out. Critical nuance: these labels describe the reporting club's assessment at the time of the report, not a medical prognosis, and clubs update them as the week progresses. A Friday Questionable can become a Sunday scratch or a full workload.
+
+## What a designation does and does not tell you
+
+A DNP on Wednesday is a data point about one practice. Players sit for load management, illness, personal reasons and veteran rest alongside genuine injuries. A Limited tag can mean a player is trending toward playing, is being eased back, or is being managed through a chronic issue they will play with all season. None of these distinctions is visible in the designation itself.
+
+The informative signal is the trajectory across the week. A player who goes Limited-Limited-Full and carries no game-status label is a different situation from DNP-DNP-DNP with a Doubtful tag, even though both appear on the same report template. Single-day snapshots — especially screenshots circulating on social media — strip away exactly the context that makes the report meaningful.
+
+## Reading reports without overreacting
+
+Three habits keep injury analysis grounded. First, always check the practice day: a Friday report supersedes Wednesday's, and the final status report before kickoff is the only one that binds. Second, weight by role: a Questionable backup guard changes less than a Questionable starting quarterback, and depth-chart context is as important as the tag. Third, remember that opponents' reports matter too — a pass rusher's availability changes what an offensive line's bumps actually mean.
+
+For modeling purposes, the report is an input to a distribution, not a verdict on the game. Historical play rates by designation (Questionable players have historically played in a majority of cases; Doubtful rarely) are useful priors, but they are league-wide averages that vary by position, injury type and even individual club reporting tendencies.
+
+## Where the 2026 season adds context
+
+Official regular-season injury-report procedures begin with Kickoff Weekend on September 9–14, and the league's 18-week schedule means byes, short weeks and international trips all interact with availability in ways a single report cannot capture. The live [Superbowl.gg game center](/games) carries the current schedule so a report can always be read against the right practice calendar, and our [injury report guide](/blog/nfl-injury-report-practice-game-status-explained) covers how designations map to weekly analysis in more depth.
+
+Treat the injury report as what it is: a standardized disclosure that tells you who practiced, how much, and what the club currently expects. Everything beyond that — how an absence reshapes a matchup, which backup changes the plan, whether a Limited star is truly trending toward playing — is analysis, and it should be labeled as such.`,
+  },
 ];
