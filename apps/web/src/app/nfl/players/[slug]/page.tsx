@@ -48,8 +48,8 @@ export default async function PlayerPage({ params }: { params: Promise<{ slug: s
             {player.gameStats.length === 0 ? (
               <EmptyState title="No game stats yet" />
             ) : (
-              <div className="overflow-hidden rounded-xl border border-brand-border">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto rounded-xl border border-brand-border">
+                <table className="w-full min-w-[620px] text-sm">
                   <thead className="bg-brand-surface">
                     <tr>
                       <th className="table-head px-4 py-2.5">Game</th>

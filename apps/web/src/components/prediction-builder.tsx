@@ -1,7 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import Link from "next/link";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
+import type { PredictionOptionMarket, PredictionOptionsResult } from "@/lib/prediction-options";
+import { pickReturnTo } from "@/lib/return-url";
 
 interface GameOption {
   id: string;
@@ -9,160 +13,225 @@ interface GameOption {
   awayAbbr: string;
 }
 
-interface MarketOutcome {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  point: number | null;
+function americanOdds(price: number): string {
+  return price >= 2 ? `+${Math.round((price - 1) * 100)}` : `${Math.round(-100 / (price - 1))}`;
 }
 
-interface MarketOption {
-  id: string;
-  key: string;
-  name: string;
-  bookmaker: string;
-  outcomes: MarketOutcome[];
+function errorMessage(code: string | undefined, fallback: string): string {
+  if (code === "AUTH_REQUIRED") return "Your pick is saved here. Sign in to publish it.";
+  if (code === "GAME_STARTED") return "Kickoff has passed, so this game is closed for new picks.";
+  if (code === "ODDS_STALE") return "Those odds have expired. Refresh to load the current options.";
+  if (code === "OUTCOME_NOT_FOUND" || code === "MARKET_UNAVAILABLE") return "That outcome is no longer offered. Choose another current option.";
+  return fallback;
 }
 
-export function PredictionBuilder({ game, markets }: { game: GameOption; markets: MarketOption[] }) {
+export function PredictionComposer({
+  game,
+  markets,
+  authenticated,
+  initialOutcomeId,
+  onClose,
+}: {
+  game: GameOption;
+  markets: PredictionOptionMarket[];
+  authenticated: boolean;
+  initialOutcomeId?: string;
+  onClose?: () => void;
+}) {
   const router = useRouter();
-  const requestId = useRef<string | null>(null);
-  const [step, setStep] = useState(0); // 0 market, 1 outcome, 2 confidence, 3 review
-  const [market, setMarket] = useState<string | null>(null);
-  const [outcome, setOutcome] = useState<MarketOutcome | null>(null);
+  const restoredMarket = markets.find((candidate) => candidate.outcomes.some((outcome) => outcome.id === initialOutcomeId));
+  const initialMarket = restoredMarket ?? markets[0];
+  const [availableMarkets, setAvailableMarkets] = useState(markets);
+  const [marketId, setMarketId] = useState(initialMarket?.id ?? "");
+  const [outcomeId, setOutcomeId] = useState(initialOutcomeId && initialMarket?.outcomes.some((item) => item.id === initialOutcomeId) ? initialOutcomeId : "");
   const [confidence, setConfidence] = useState<"LOW" | "MEDIUM" | "HIGH">("MEDIUM");
   const [analysis, setAnalysis] = useState("");
   const [units, setUnits] = useState(1);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialOutcomeId && !restoredMarket ? "Your saved outcome is no longer offered. Choose a current option." : null);
+  const [errorCode, setErrorCode] = useState<string | null>(initialOutcomeId && !restoredMarket ? "OUTCOME_NOT_FOUND" : null);
   const [publishing, setPublishing] = useState(false);
+  const requestId = useRef<string | null>(null);
 
-  const activeMarket = markets.find((m) => m.id === market);
+  const activeMarket = availableMarkets.find((candidate) => candidate.id === marketId);
+  const outcome = activeMarket?.outcomes.find((candidate) => candidate.id === outcomeId);
+  const returnTo = outcome ? pickReturnTo(game.id, outcome.id) : `/predict?game=${encodeURIComponent(game.id)}`;
+  const marketLabel = useMemo(() => activeMarket?.name ?? "Choose a market", [activeMarket]);
 
-  const steps = ["Market", "Outcome", "Confidence", "Review"];
-
-  function reset() {
-    setStep(0);
-    setMarket(null);
-    setOutcome(null);
-    setConfidence("MEDIUM");
-    setAnalysis("");
-    setUnits(1);
-    requestId.current = null;
+  async function refreshOptions(): Promise<PredictionOptionsResult | null> {
+    setError(null);
+    setErrorCode(null);
+    try {
+      const response = await fetch(`/api/games/${encodeURIComponent(game.id)}/prediction-options`, { cache: "no-store" });
+      const body = await response.json().catch(() => null) as PredictionOptionsResult | { error?: string; code?: string } | null;
+      if (!response.ok || !body || !("markets" in body)) {
+        setError(body && "error" in body ? body.error ?? "Current odds could not be loaded." : "Current odds could not be loaded.");
+        return null;
+      }
+      setAvailableMarkets(body.markets);
+      if (!body.markets.some((market) => market.id === marketId)) setMarketId(body.markets[0]?.id ?? "");
+      const selectedStillExists = body.markets.some((market) => market.outcomes.some((item) => item.id === outcomeId));
+      if (outcomeId && !selectedStillExists) {
+        setOutcomeId("");
+        setMarketId(body.markets[0]?.id ?? "");
+        setError(body.availability === "AVAILABLE" ? "Your previous outcome moved or closed. Choose a current option." : body.reason);
+        setErrorCode(body.availability === "STALE" ? "ODDS_STALE" : "OUTCOME_NOT_FOUND");
+      }
+      return body;
+    } catch {
+      setError("The network did not respond. Your selections are still here—try again.");
+      setErrorCode("NETWORK_ERROR");
+      return null;
+    }
   }
 
-  async function publish() {
-    if (!market || !outcome) return;
-    setPublishing(true);
-    setError(null);
-    requestId.current ??= crypto.randomUUID();
-
-    const res = await fetch("/api/predictions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        clientRequestId: requestId.current,
-        gameId: game.id,
-        marketOutcomeId: outcome.id,
-        confidence,
-        analysis: analysis || null,
-        virtualUnits: units,
-      }),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setError(body.error ?? "Publish failed");
-      setPublishing(false);
+  async function publish(event: React.FormEvent) {
+    event.preventDefault();
+    if (!outcome) {
+      setError("Choose an outcome before publishing.");
       return;
     }
-    router.push(`/predictions/${body.id}`);
-    router.refresh();
+    if (!authenticated) {
+      router.push(`/auth/sign-up?next=${encodeURIComponent(returnTo)}`);
+      return;
+    }
+
+    setPublishing(true);
+    setError(null);
+    setErrorCode(null);
+    try {
+      const current = await refreshOptions();
+      if (!current?.markets.some((market) => market.outcomes.some((item) => item.id === outcome.id))) {
+        setPublishing(false);
+        return;
+      }
+      requestId.current ??= crypto.randomUUID();
+      const response = await fetch("/api/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientRequestId: requestId.current,
+          gameId: game.id,
+          marketOutcomeId: outcome.id,
+          confidence,
+          analysis: analysis || null,
+          virtualUnits: units,
+        }),
+      });
+      const body = await response.json().catch(() => ({})) as { error?: string; code?: string; id?: string };
+      if (!response.ok || !body.id) {
+        setErrorCode(body.code ?? "PUBLISH_FAILED");
+        setError(errorMessage(body.code, body.error ?? "The pick could not be published. Try again."));
+        setPublishing(false);
+        return;
+      }
+      router.push(`/predictions/${body.id}`);
+      router.refresh();
+    } catch {
+      setErrorCode("NETWORK_ERROR");
+      setError("The network did not respond. Your selections are still here—try again.");
+      setPublishing(false);
+    }
+  }
+
+  if (!availableMarkets.length) {
+    return (
+      <div className="card text-center">
+        <AlertCircle className="mx-auto h-6 w-6 text-brand-warning" />
+        <p className="mt-3 font-semibold text-brand-text">No pickable markets right now</p>
+        <p className="mt-1 text-sm text-brand-muted">Odds may be refreshing or this game may have closed.</p>
+        <button type="button" className="btn-secondary mt-4 min-h-11" onClick={() => void refreshOptions()}><RefreshCw className="h-4 w-4" /> Refresh odds</button>
+      </div>
+    );
   }
 
   return (
-    <div className="card">
-      {/* stepper */}
-      <ol className="mb-4 flex items-center gap-1 text-xs">
-        {steps.map((s, i) => (
-          <li key={s} className="flex items-center gap-1">
-            <button type="button" onClick={() => i < step && setStep(i)} className={`rounded-full px-2 py-0.5 font-semibold ${i === step ? "bg-brand-primary text-slate-950" : i < step ? "bg-brand-success/20 text-brand-success" : "bg-brand-surface2 text-brand-muted"}`}>
-              {i < step ? "✓" : i + 1} {s}
-            </button>
-            {i < steps.length - 1 ? <span className="text-brand-muted/50">→</span> : null}
-          </li>
-        ))}
-      </ol>
+    <form onSubmit={publish} className="card space-y-5" aria-label={`Prediction for ${game.awayAbbr} at ${game.homeAbbr}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-primary">Quick pick</p>
+          <h2 className="mt-1 font-display text-xl font-semibold text-brand-text">{game.awayAbbr} @ {game.homeAbbr}</h2>
+        </div>
+        {onClose ? <button type="button" onClick={onClose} className="btn-ghost min-h-11 !px-3" aria-label="Close prediction composer">Close</button> : null}
+      </div>
 
-      {step === 0 && (
-        <div className="grid gap-2 sm:grid-cols-3">
-          {markets.map((m) => (
-            <button key={m.id} type="button" onClick={() => { setMarket(m.id); setStep(1); }} className="card card-hover text-left">
-              <p className="text-sm font-semibold text-brand-text">{m.name}</p>
-              <p className="mt-1 text-xs text-brand-muted">{m.bookmaker} · {m.outcomes.length} options</p>
+      <fieldset>
+        <legend className="label">Market</legend>
+        <div className="scrollbar-subtle flex gap-2 overflow-x-auto pb-1">
+          {availableMarkets.map((market) => (
+            <button
+              key={market.id}
+              type="button"
+              onClick={() => { setMarketId(market.id); setOutcomeId(""); setError(null); }}
+              className={`tab min-h-11 shrink-0 border ${market.id === marketId ? "tab-active border-brand-primary/30" : "border-brand-border bg-brand-surface"}`}
+            >
+              {market.name}
             </button>
           ))}
         </div>
-      )}
+      </fieldset>
 
-      {step === 1 && activeMarket && (
+      <fieldset>
+        <legend className="label">Outcome · {marketLabel}</legend>
         <div className="grid gap-2 sm:grid-cols-2">
-          {activeMarket.outcomes.map((o) => (
-            <button key={o.id} type="button" onClick={() => { setOutcome(o); setStep(2); }} className="card card-hover flex items-center justify-between">
-              <span className="text-sm font-semibold text-brand-text">
-                {o.name}
-                {o.description ? <span className="ml-1 text-brand-muted">· {o.description}</span> : null}
-                {o.point != null ? <span className="ml-1 text-brand-muted">{o.point > 0 ? "+" : ""}{o.point}</span> : null}
+          {activeMarket?.outcomes.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => { setOutcomeId(item.id); setError(null); setErrorCode(null); requestId.current = null; }}
+              className={`min-h-14 rounded-xl border p-3 text-left transition ${item.id === outcomeId ? "border-brand-primary bg-brand-primary/10 ring-2 ring-brand-primary/20" : "border-brand-border bg-brand-surface2 hover:border-brand-primary/50"}`}
+            >
+              <span className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-brand-text">{item.name}{item.description ? ` · ${item.description}` : ""}</span>
+                <span className="scoreboard-num text-brand-primary">{americanOdds(item.price)}</span>
               </span>
-              <span className="scoreboard-num text-brand-primary">{o.price >= 2 ? `+${Math.round((o.price - 1) * 100)}` : Math.round(-100 / (o.price - 1))}</span>
+              {item.point != null ? <span className="mt-1 block text-xs text-brand-muted">Line {item.point > 0 ? "+" : ""}{item.point}</span> : null}
             </button>
           ))}
         </div>
-      )}
+      </fieldset>
 
-      {step === 2 && (
-        <div className="space-y-4">
-          <div className="grid gap-2 sm:grid-cols-3">
-            {(["LOW", "MEDIUM", "HIGH"] as const).map((c) => (
-              <button key={c} type="button" onClick={() => setConfidence(c)} className={`card card-hover text-center ${confidence === c ? "ring-2 ring-brand-primary" : ""}`}>
-                <p className="text-sm font-semibold text-brand-text">{c === "LOW" ? "Low" : c === "MEDIUM" ? "Medium" : "High"}</p>
-                <p className="text-xs text-brand-muted">{c === "LOW" ? "Casual read" : c === "MEDIUM" ? "Solid lean" : "Strong conviction"}</p>
-              </button>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <fieldset>
+          <legend className="label">Confidence</legend>
+          <div className="grid grid-cols-3 gap-1 rounded-xl bg-brand-surface2 p-1">
+            {(["LOW", "MEDIUM", "HIGH"] as const).map((value) => (
+              <button key={value} type="button" onClick={() => setConfidence(value)} className={`min-h-11 rounded-lg px-2 text-xs font-bold ${confidence === value ? "bg-brand-surface text-brand-primary shadow-sm" : "text-brand-muted hover:text-brand-text"}`}>{value === "MEDIUM" ? "Medium" : value === "LOW" ? "Low" : "High"}</button>
             ))}
           </div>
-          <div>
-            <label className="label" htmlFor="units">Virtual units ({units})</label>
-            <input id="units" type="range" min={1} max={5} step={1} value={units} onChange={(e) => setUnits(Number(e.target.value))} className="w-full accent-brand-primary" />
+        </fieldset>
+        <fieldset>
+          <legend className="label">Virtual units</legend>
+          <div className="grid grid-cols-5 gap-1">
+            {[1, 2, 3, 4, 5].map((value) => <button key={value} type="button" onClick={() => setUnits(value)} className={`min-h-11 rounded-lg border text-sm font-bold ${units === value ? "border-brand-primary bg-brand-primary/10 text-brand-primary" : "border-brand-border text-brand-muted"}`}>{value}</button>)}
           </div>
-          <div>
-            <label className="label" htmlFor="analysis">Analysis (optional)</label>
-            <textarea id="analysis" className="input min-h-20" placeholder="Why are you taking this side? (public)" value={analysis} onChange={(e) => setAnalysis(e.target.value)} maxLength={2000} />
-          </div>
-          <button type="button" className="btn-primary" onClick={() => setStep(3)}>Review prediction</button>
-        </div>
-      )}
+        </fieldset>
+      </div>
 
-      {step === 3 && market && outcome && (
-        <div className="space-y-4">
-          <div className="rounded-lg border border-brand-border bg-brand-surface2 p-4 text-sm">
-            <div className="flex justify-between"><span className="text-brand-muted">Game</span><span className="font-medium text-brand-text">{game.awayAbbr} @ {game.homeAbbr}</span></div>
-            <div className="mt-1 flex justify-between"><span className="text-brand-muted">Market</span><span className="font-medium text-brand-text">{activeMarket?.name}</span></div>
-            <div className="mt-1 flex justify-between"><span className="text-brand-muted">Pick</span><span className="font-medium text-brand-text">{outcome.name}{outcome.point != null ? ` ${outcome.point > 0 ? "+" : ""}${outcome.point}` : ""}</span></div>
-            <div className="mt-1 flex justify-between"><span className="text-brand-muted">Odds (snapshot)</span><span className="scoreboard-num text-brand-primary">{outcome.price}</span></div>
-            <div className="mt-1 flex justify-between"><span className="text-brand-muted">Confidence</span><span className="font-medium text-brand-text">{confidence}</span></div>
-            <div className="mt-1 flex justify-between"><span className="text-brand-muted">Units</span><span className="font-medium text-brand-text">{units}</span></div>
-          </div>
-          <p className="text-xs text-brand-muted">
-            Your pick locks when the game starts and settles automatically. Prediction history is permanent.
-          </p>
-          {error ? <p className="text-sm text-brand-danger">{error}</p> : null}
-          <div className="flex gap-2">
-            <button type="button" className="btn-secondary" onClick={reset}>Edit</button>
-            <button type="button" className="btn-primary flex-1" disabled={publishing} onClick={publish}>
-              {publishing ? "Publishing…" : "Publish prediction"}
-            </button>
-          </div>
+      <div>
+        <label className="label" htmlFor={`analysis-${game.id}`}>Analysis (optional)</label>
+        <textarea id={`analysis-${game.id}`} className="input min-h-20" placeholder="What makes this your pick?" value={analysis} onChange={(event) => setAnalysis(event.target.value)} maxLength={2_000} />
+      </div>
+
+      {outcome ? (
+        <div className="rounded-xl border border-brand-border bg-brand-surface2 p-3 text-sm" aria-live="polite">
+          <span className="flex items-center gap-2 font-semibold text-brand-text"><CheckCircle2 className="h-4 w-4 text-brand-success" /> {activeMarket?.name}: {outcome.name}</span>
+          <span className="mt-1 block text-xs text-brand-muted">{units} virtual unit{units === 1 ? "" : "s"} · no monetary value</span>
         </div>
-      )}
-    </div>
+      ) : null}
+
+      {error ? (
+        <div className="rounded-xl border border-brand-danger/30 bg-brand-danger/10 p-3 text-sm text-brand-danger" role="alert">
+          <p>{error}</p>
+          {errorCode === "ODDS_STALE" || errorCode === "NETWORK_ERROR" || errorCode === "OUTCOME_NOT_FOUND" ? <button type="button" className="mt-2 inline-flex min-h-11 items-center gap-2 font-bold underline" onClick={() => void refreshOptions()}><RefreshCw className="h-4 w-4" /> Refresh current odds</button> : null}
+        </div>
+      ) : null}
+
+      <button type="submit" disabled={!outcome || publishing} className="btn-primary min-h-12 w-full">
+        {publishing ? "Checking and publishing…" : authenticated ? "Publish prediction" : "Join free to publish"}
+      </button>
+      {!authenticated && outcome ? <p className="text-center text-xs text-brand-muted">Already have an account? <Link href={`/auth/sign-in?next=${encodeURIComponent(returnTo)}`} className="font-bold text-brand-primary hover:underline">Sign in and return to this pick</Link>.</p> : null}
+    </form>
   );
 }
+
+export const PredictionBuilder = PredictionComposer;

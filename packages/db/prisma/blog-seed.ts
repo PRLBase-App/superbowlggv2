@@ -677,7 +677,7 @@ The schedule's international stretch makes this concrete. A club flying to Munic
 
 Three practices separate careful analysis from narrative. First, always compare: rest differential, travel asymmetry and bye placement for both clubs, never one side alone. Second, separate confirmed facts from interpretation — the schedule and injury report are facts; "they'll be flat after the trip" is a hypothesis. Third, respect sample limits: a handful of international games per season is a small dataset, and conclusions drawn from it should be held loosely.
 
-None of this makes byes, rest and travel irrelevant. It makes them context — inputs that adjust a matchup evaluation by a modest amount, rather than the headline of a prediction. When you read a claim that a bye or a flight will decide a game, check whether the analysis compared both teams and whether the effect size cited survives contact with a full-season sample. The [Superbowl.gg game center](/games) keeps schedule, rest and location data current so those comparisons take seconds, not hours.`,
+None of this makes byes, rest and travel irrelevant. It makes them context — inputs that adjust a matchup evaluation by a modest amount, rather than the headline of a prediction. When you read a claim that a bye or a flight will decide a game, check whether the analysis compared both teams and whether the effect size cited survives contact with a full-season sample. The [Superbowl.gg game center](/games) keeps schedule, rest and location data current with consistent definitions and timestamps, so those comparisons take seconds, not hours.`,
   },
   {
     slug: "nfl-injury-reports-what-doubtful-and-questionable-mean",
@@ -713,6 +713,12 @@ The informative signal is the trajectory across the week. A player who goes Limi
 Three habits keep injury analysis grounded. First, always check the practice day: a Friday report supersedes Wednesday's, and the final status report before kickoff is the only one that binds. Second, weight by role: a Questionable backup guard changes less than a Questionable starting quarterback, and depth-chart context is as important as the tag. Third, remember that opponents' reports matter too — a pass rusher's availability changes what an offensive line's bumps actually mean.
 
 For modeling purposes, the report is an input to a distribution, not a verdict on the game. Historical play rates by designation (Questionable players have historically played in a majority of cases; Doubtful rarely) are useful priors, but they are league-wide averages that vary by position, injury type and even individual club reporting tendencies.
+
+## Translate availability into a football effect
+
+The final step is separating a player's chance of being active from the effect of that player on the matchup. Those are different questions. An active starter may have a restricted snap count, while a well-prepared reserve can preserve most of the original game plan. Start with role and likely replacement: identify the snaps, assignments and personnel packages that would change if the player sits. Then ask whether the opponent is equipped to attack that specific change.
+
+This approach prevents double counting. If a quarterback's absence is already reflected in an efficiency projection, adding a second broad "injury downgrade" for the offense exaggerates the same information. It also makes uncertainty visible. Analysts can publish a base case, an active-but-limited case and an inactive case instead of pretending one forecast covers all three. When the final inactive list arrives before kickoff, update the relevant branch and leave unrelated assumptions alone. A transparent range is more useful than a confident headline built from an early-week label.
 
 ## Where the 2026 season adds context
 

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { Prisma, prisma, type PredictionMarket } from "@sbgg/db";
+import { Prisma, prisma } from "@sbgg/db";
 import { checkAchievements, grantXpAndCoins, recordDailyActivity } from "@sbgg/gamification";
 import { xpDefaults } from "@sbgg/core";
 import { getSession } from "@/lib/session";
+import { isFreshOdds, normalizeOutcome, selectionForOutcome } from "@/lib/prediction-options";
+import { publicationDecision } from "@/lib/prediction-publication";
 
 const publishSchema = z.object({
   clientRequestId: z.string().uuid(),
@@ -14,48 +16,8 @@ const publishSchema = z.object({
   virtualUnits: z.coerce.number().min(0.5).max(10),
 }).strict();
 
-const MAX_ODDS_AGE_MS = 12 * 60 * 60 * 1_000;
-const SUPPORTED_PROP_MARKETS = [
-  "player_pass_yds",
-  "player_pass_tds",
-  "player_pass_interceptions",
-  "player_rush_yds",
-  "player_receptions",
-  "player_reception_yds",
-  "player_anytime_td",
-] as const;
-
-function normalize(value: string): string {
-  return value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
-}
-
-function selectionForOutcome(
-  marketKey: string,
-  outcomeName: string,
-  homeTeam: { name: string; abbreviation: string },
-  awayTeam: { name: string; abbreviation: string },
-): { marketType: PredictionMarket; selection: string; marketKey: string } | null {
-  const outcome = normalize(outcomeName);
-  const homeNames = [normalize(homeTeam.name), normalize(homeTeam.abbreviation)];
-  const awayNames = [normalize(awayTeam.name), normalize(awayTeam.abbreviation)];
-  if (marketKey === "h2h" || marketKey === "spreads") {
-    const selection = homeNames.includes(outcome) ? "home" : awayNames.includes(outcome) ? "away" : null;
-    if (!selection) return null;
-    return {
-      marketType: marketKey === "h2h" ? "MONEYLINE" : "SPREAD",
-      selection,
-      marketKey: `${marketKey}_${selection}`,
-    };
-  }
-  if (marketKey === "totals") {
-    const selection = outcome === "over" ? "over" : outcome === "under" ? "under" : null;
-    return selection ? { marketType: "TOTAL", selection, marketKey: `${marketKey}_${selection}` } : null;
-  }
-  if ((SUPPORTED_PROP_MARKETS as readonly string[]).includes(marketKey)) {
-    const selection = outcome === "over" ? "over" : outcome === "under" ? "under" : marketKey === "player_anytime_td" && outcome === "yes" ? "over" : null;
-    return selection ? { marketType: "PLAYER_PROP", selection, marketKey } : null;
-  }
-  return null;
+function apiError(error: string, code: string, status: number, details?: unknown) {
+  return NextResponse.json({ error, code, ...(details ? { details } : {}) }, { status });
 }
 
 async function rewardPublication(userId: string, predictionId: string): Promise<void> {
@@ -74,17 +36,17 @@ async function rewardPublication(userId: string, predictionId: string): Promise<
 /** Publish from a server-owned, immutable provider snapshot. Browser-supplied odds are never accepted. */
 export async function POST(request: Request) {
   const session = await getSession();
-  if (!session?.user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  if (!session?.user) return apiError("Sign in to publish this pick.", "AUTH_REQUIRED", 401);
 
   const parsed = publishSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid prediction", details: parsed.error.flatten().fieldErrors }, { status: 400 });
+    return apiError("Check the prediction details and try again.", "INVALID_PREDICTION", 400, parsed.error.flatten().fieldErrors);
   }
   const input = parsed.data;
 
   const prior = await prisma.prediction.findUnique({ where: { clientRequestId: input.clientRequestId } });
   if (prior) {
-    if (prior.userId !== session.user.id) return NextResponse.json({ error: "Request ID is already in use" }, { status: 409 });
+    if (publicationDecision(prior.userId, session.user.id) === "CONFLICT") return apiError("This publish request cannot be reused.", "REQUEST_CONFLICT", 409);
     await rewardPublication(session.user.id, prior.id);
     return NextResponse.json({ ok: true, id: prior.id, duplicate: true });
   }
@@ -101,15 +63,15 @@ export async function POST(request: Request) {
     },
   });
   if (!outcome || outcome.market.gameId !== input.gameId) {
-    return NextResponse.json({ error: "Market outcome not found" }, { status: 404 });
+    return apiError("That outcome is no longer available. Choose a current option.", "OUTCOME_NOT_FOUND", 404);
   }
   const { game, bookmaker } = outcome.market;
   const now = new Date();
   if (game.status !== "SCHEDULED" || game.scheduledAt <= now) {
-    return NextResponse.json({ error: "This game has already started" }, { status: 409 });
+    return apiError("This game has started and picks are closed.", "GAME_STARTED", 409);
   }
-  if (!bookmaker || !outcome.providerOutcomeKey) {
-    return NextResponse.json({ error: "This market has no verifiable provider source" }, { status: 409 });
+  if (!outcome.market.active || !bookmaker?.active || !outcome.providerOutcomeKey) {
+    return apiError("This market is no longer available from a verified provider.", "MARKET_UNAVAILABLE", 409);
   }
 
   const marketSelection = selectionForOutcome(
@@ -118,7 +80,7 @@ export async function POST(request: Request) {
     game.homeTeam,
     game.awayTeam,
   );
-  if (!marketSelection) return NextResponse.json({ error: "Unsupported market outcome" }, { status: 422 });
+  if (!marketSelection) return apiError("This outcome is not supported for predictions.", "INVALID_SELECTION", 422);
 
   const snapshot = await prisma.oddsSnapshot.findFirst({
     where: {
@@ -129,22 +91,21 @@ export async function POST(request: Request) {
     },
     orderBy: { capturedAt: "desc" },
   });
-  if (!snapshot) return NextResponse.json({ error: "No provider odds snapshot is available" }, { status: 409 });
-  if (snapshot.capturedAt.getTime() > now.getTime() + 5 * 60 * 1_000
-    || now.getTime() - snapshot.capturedAt.getTime() > MAX_ODDS_AGE_MS) {
-    return NextResponse.json({ error: "The latest provider odds are stale; try again after the next sync" }, { status: 409 });
+  if (!snapshot) return apiError("Verified odds are not available yet.", "ODDS_UNAVAILABLE", 409);
+  if (!isFreshOdds(snapshot.capturedAt, now)) {
+    return apiError("These odds have expired. Refresh the picks and choose again.", "ODDS_STALE", 409);
   }
 
   let playerId: string | null = null;
   if (marketSelection.marketType === "PLAYER_PROP") {
-    if (!outcome.description) return NextResponse.json({ error: "Player identity is missing from this market" }, { status: 409 });
+    if (!outcome.description) return apiError("The player for this market could not be verified.", "PLAYER_UNVERIFIED", 409);
     const players = await prisma.player.findMany({
       where: { teamId: { in: [game.homeTeamId, game.awayTeamId] } },
       select: { id: true, name: true },
     });
-    const description = normalize(outcome.description);
-    playerId = players.find((player) => normalize(player.name) === description)?.id ?? null;
-    if (!playerId) return NextResponse.json({ error: "Player identity could not be verified" }, { status: 409 });
+    const description = normalizeOutcome(outcome.description);
+    playerId = players.find((player) => normalizeOutcome(player.name) === description)?.id ?? null;
+    if (!playerId) return apiError("The player for this market could not be verified.", "PLAYER_UNVERIFIED", 409);
   }
 
   let prediction;

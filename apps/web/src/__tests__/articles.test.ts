@@ -58,9 +58,9 @@ describe("article publishing validation", () => {
 });
 
 describe("launch editorial library", () => {
-  it("contains eight unique, substantial, sourced articles", () => {
-    expect(editorialSeedArticles).toHaveLength(8);
-    expect(new Set(editorialSeedArticles.map((article) => article.slug)).size).toBe(8);
+  it("contains ten unique, substantial, sourced articles", () => {
+    expect(editorialSeedArticles).toHaveLength(10);
+    expect(new Set(editorialSeedArticles.map((article) => article.slug)).size).toBe(10);
     for (const article of editorialSeedArticles) {
       expect(articleWordCount(article.body), article.slug).toBeGreaterThanOrEqual(700);
       expect(article.sourceLinks.length, article.slug).toBeGreaterThan(0);

@@ -27,7 +27,7 @@ export default async function WeekPredictionsPage({ params }: { params: Promise<
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "NFL", href: "/nfl" }, { label: `Week ${weekNum}`, href: `/nfl/week/${weekNum}` }, { label: "Predictions" }]} />
       <SeoHubShell title={`NFL Week ${weekNum} Predictions`} description={`The community's picks for NFL Week ${weekNum}.`}>
         {weekPreds.length === 0 ? (
-          <EmptyState title="No picks published for this week yet" body="Predictions appear here as the community publishes them." />
+          <EmptyState title="No picks published for this week yet" body="Predictions appear here as the community publishes them." action={{ href: "/predict", label: "Make a pick" }} />
         ) : (
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {weekPreds.map((p) => (

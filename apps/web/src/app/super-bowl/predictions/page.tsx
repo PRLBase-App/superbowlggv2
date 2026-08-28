@@ -51,7 +51,7 @@ export default async function SuperBowlPredictionsPage() {
             ))}
           </div>
         ) : (
-          <EmptyState title="No predictions yet" body="The community publishes picks here once the slate is live." />
+          <EmptyState title="No predictions yet" body="The community publishes picks here once the slate is live." action={{ href: "/predict", label: "Open the pick board" }} />
         )}
       </SeoHubShell>
     </>

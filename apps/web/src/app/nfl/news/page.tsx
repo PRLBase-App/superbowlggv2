@@ -32,7 +32,7 @@ export default async function NflNewsPage({ searchParams }: { searchParams: Prom
           {page < totalPages ? <Link href={`/nfl/news?page=${page + 1}`} className="btn-secondary">Older NFL reports</Link> : null}
         </nav> : null}
 
-        <section className="grid gap-6 rounded-2xl border border-brand-border bg-white p-6 lg:grid-cols-2">
+        <section className="grid gap-6 rounded-2xl border border-brand-border bg-brand-surface p-6 lg:grid-cols-2">
           <div><h2 className="font-display text-2xl font-semibold normal-case text-brand-text">News that stays connected to the season</h2><p className="mt-3 text-sm leading-7 text-brand-muted">The news board complements the schedule, scores and community predictions instead of replacing original journalism. Every headline and summary is supplied by ESPN, every card names the source, and every click opens the original article on ESPN. Superbowl.gg does not republish full stories.</p></div>
           <div><h2 className="font-display text-2xl font-semibold normal-case text-brand-text">How visual team matching works</h2><p className="mt-3 text-sm leading-7 text-brand-muted">When a feed item clearly names an NFL team, its official team mark helps readers identify the subject quickly. If no team can be matched with confidence, the card uses the publisher image supplied by the RSS feed. A logo is never used to imply sponsorship or endorsement.</p></div>
         </section>

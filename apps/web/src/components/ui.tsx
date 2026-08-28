@@ -8,7 +8,7 @@ export function Card({ children, className = "", hover = false }: { children: Re
 
 export function Badge({ children, tone = "slate", className = "" }: { children: ReactNode; tone?: "slate" | "green" | "red" | "blue" | "gold" | "indigo"; className?: string }) {
   const tones: Record<string, string> = {
-    slate: "bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/30",
+    slate: "bg-brand-muted/15 text-brand-muted ring-1 ring-brand-muted/30",
     green: "bg-brand-success/15 text-brand-success ring-1 ring-brand-success/30",
     red: "bg-brand-danger/15 text-brand-danger ring-1 ring-brand-danger/30",
     blue: "bg-brand-primary/15 text-brand-primary ring-1 ring-brand-primary/30",
@@ -37,7 +37,7 @@ export function TeamBadge({ abbr, name, color, logoUrl, size = "md", link }: { a
   const inner = (
     <span className="inline-flex items-center gap-2.5">
       <span
-        className={`${box} relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-brand-border bg-white p-1 font-display font-bold text-white shadow-sm`}
+        className={`${box} logo-tile relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-brand-border p-1 font-display font-bold text-white shadow-sm`}
         style={logoUrl ? undefined : { backgroundColor: color || "#1e293b" }}
       >
         {logoUrl ? <Image src={logoUrl} alt={`${name ?? abbr} logo`} width={pixels} height={pixels} className="h-full w-full object-contain" /> : abbr}
@@ -61,11 +61,12 @@ export function OddsCell({ price, point, label }: { price?: number | null; point
   );
 }
 
-export function EmptyState({ title, body }: { title: string; body?: string }) {
+export function EmptyState({ title, body, action }: { title: string; body?: string; action?: { href: string; label: string } }) {
   return (
     <div className="card flex flex-col items-center justify-center gap-2 border-dashed py-12 text-center">
       <p className="font-display text-lg text-brand-text">{title}</p>
       {body ? <p className="max-w-sm text-sm text-brand-muted">{body}</p> : null}
+      {action ? <Link href={action.href} className="btn-primary mt-2 min-h-11">{action.label}</Link> : null}
     </div>
   );
 }

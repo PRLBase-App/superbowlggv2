@@ -5,6 +5,7 @@ import { SectionTitle, EmptyState } from "@/components/ui";
 import { GamesList } from "@/components/games-list";
 import type { GameStatus } from "@sbgg/db";
 import { nflSeasonLabel } from "@/lib/season";
+import { getPickBoardGames } from "@/lib/prediction-data";
 
 export const metadata: Metadata = {
   title: "NFL Games, Odds & Schedule",
@@ -34,7 +35,11 @@ export default async function GamesPage({ searchParams }: { searchParams: Promis
     type = regularInWeek.length > 0 ? "reg" : hasPre ? "pre" : null;
   }
 
-  const games = await getGames({ week: weekParam, seasonType: type ? (type === "pre" ? "PRE" : "REGULAR") : undefined, status, limit: 100 });
+  const [games, pickBoardGames] = await Promise.all([
+    getGames({ week: weekParam, seasonType: type ? (type === "pre" ? "PRE" : "REGULAR") : undefined, status, limit: 100 }),
+    getPickBoardGames(new Date(), 24),
+  ]);
+  const pickOptions = Object.fromEntries(pickBoardGames.map((game) => [game.id, game.options]));
 
   const regWeeks = Array.from({ length: Math.min(18, Math.max(4, season?.currentWeek ?? 4)) }, (_, i) => i + 1);
 
@@ -67,7 +72,7 @@ export default async function GamesPage({ searchParams }: { searchParams: Promis
       {games.length === 0 ? (
         <EmptyState title="No games here yet" body="Games sync automatically from the sports provider." />
       ) : (
-        <GamesList games={games} />
+        <GamesList games={games} pickOptions={pickOptions} />
       )}
     </div>
   );

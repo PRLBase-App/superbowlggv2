@@ -14,8 +14,8 @@ export default async function SuperBowlHistoryPage() {
     <>
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Super Bowl", href: "/super-bowl" }, { label: "History" }]} />
       <SeoHubShell title="Super Bowl History" description="Every Super Bowl from I (1967) to the present: winners, scores, MVPs and venues.">
-        <div className="overflow-hidden rounded-xl border border-brand-border">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-brand-border">
+          <table className="w-full min-w-[620px] text-sm">
             <thead className="bg-brand-surface">
               <tr>
                 <th className="table-head px-4 py-2.5">SB</th>

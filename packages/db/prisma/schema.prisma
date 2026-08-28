@@ -29,6 +29,12 @@ enum UserStatus {
   PENDING_VERIFICATION
 }
 
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
 enum LeagueSlug {
   NFL
   NCAAF
@@ -205,17 +211,18 @@ enum ArticleStatus {
 // ─────────────────────────────────────────────────────────────
 
 model User {
-  id            String     @id @default(cuid())
-  name          String?
-  email         String     @unique
-  emailVerified Boolean    @default(false)
-  image         String?
-  passwordHash  String?
-  role          UserRole   @default(USER)
-  status        UserStatus @default(PENDING_VERIFICATION)
-  isAdmin       Boolean    @default(false)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id              String          @id @default(cuid())
+  name            String?
+  email           String          @unique
+  emailVerified   Boolean         @default(false)
+  image           String?
+  passwordHash    String?
+  role            UserRole        @default(USER)
+  status          UserStatus      @default(PENDING_VERIFICATION)
+  isAdmin         Boolean         @default(false)
+  themePreference ThemePreference @default(LIGHT)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   sessions        Session[]
   accounts        Account[]
@@ -698,33 +705,36 @@ model OddsSnapshot {
 // ─────────────────────────────────────────────────────────────
 
 model Prediction {
-  id                  String            @id @default(cuid())
-  clientRequestId     String?           @unique
-  userId              String
-  gameId              String
-  playerId            String? // for PLAYER_PROP
-  marketType          PredictionMarket
-  marketKey           String // h2h_home | h2h_away | spread_home | spread_away | total_over | total_under | prop_*
-  selection           String
-  line                Float?
-  oddsAtCreation      Float
-  marketOutcomeId     String?
-  oddsSnapshotId      String?
-  bookmakerKey        String?
-  oddsProvider        String?
-  oddsCapturedAt      DateTime?
-  sportsbookReference String?
-  confidence          Confidence
-  analysis            String?
-  virtualUnits        Float             @default(1)
-  status              PredictionStatus  @default(PENDING)
-  result              SettlementResult?
-  isPublic            Boolean           @default(true)
-  publishedAt         DateTime          @default(now())
-  lockedAt            DateTime?
-  settledAt           DateTime?
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  id                      String            @id @default(cuid())
+  clientRequestId         String?           @unique
+  userId                  String
+  gameId                  String
+  playerId                String? // for PLAYER_PROP
+  marketType              PredictionMarket
+  marketKey               String // h2h_home | h2h_away | spread_home | spread_away | total_over | total_under | prop_*
+  selection               String
+  line                    Float?
+  oddsAtCreation          Float
+  marketOutcomeId         String?
+  oddsSnapshotId          String?
+  bookmakerKey            String?
+  oddsProvider            String?
+  oddsCapturedAt          DateTime?
+  sportsbookReference     String?
+  confidence              Confidence
+  analysis                String?
+  virtualUnits            Float             @default(1)
+  status                  PredictionStatus  @default(PENDING)
+  result                  SettlementResult?
+  isPublic                Boolean           @default(true)
+  publishedAt             DateTime          @default(now())
+  lockedAt                DateTime?
+  settledAt               DateTime?
+  rewardsProcessedAt      DateTime?
+  achievementsProcessedAt DateTime?
+  notificationProcessedAt DateTime?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
 
   user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   game       Game                  @relation(fields: [gameId], references: [id], onDelete: Cascade)
@@ -739,6 +749,7 @@ model Prediction {
   @@index([publishedAt])
   @@index([marketType])
   @@index([oddsSnapshotId])
+  @@index([status, rewardsProcessedAt, achievementsProcessedAt, notificationProcessedAt])
 }
 
 model PredictionSettlement {

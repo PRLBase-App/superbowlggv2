@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getGameWithOdds, getGame, getInjuries } from "@/lib/data";
+import { getPredictionOptions } from "@/lib/prediction-data";
 import { getSessionUser } from "@/lib/session";
 import { Badge, Card, SectionTitle, TeamBadge, OddsCell, EmptyState } from "@/components/ui";
 import { PredictionBuilder } from "@/components/prediction-builder";
@@ -38,25 +39,11 @@ function schemaEventStatus(status: string): string {
 
 export default async function GameCenterPage({ params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = await params;
-  const [game, full, user, injuries] = await Promise.all([getGameWithOdds(gameId), getGame(gameId), getSessionUser(), getInjuries()]);
+  const [game, full, user, injuries, predictionOptions] = await Promise.all([getGameWithOdds(gameId), getGame(gameId), getSessionUser(), getInjuries(), getPredictionOptions(gameId)]);
   if (!game || !full) notFound();
 
   const gameInjuries = injuries.filter((i) => i.player?.teamId === game.homeTeamId || i.player?.teamId === game.awayTeamId);
-  const markets = (game.markets ?? [])
-    .filter((market) => market.bookmaker && market.outcomes.length > 0)
-    .map((market) => ({
-      id: market.id,
-      key: market.key,
-      name: market.name,
-      bookmaker: market.bookmaker?.name ?? "Sportsbook",
-      outcomes: market.outcomes.map((outcome) => ({
-        id: outcome.id,
-        name: outcome.name,
-        description: outcome.description,
-        price: outcome.price,
-        point: outcome.point,
-      })),
-    }));
+  const markets = predictionOptions?.markets ?? [];
   const h2h = markets.find((m) => m.key === "h2h");
   const spreads = markets.find((m) => m.key === "spreads");
   const totals = markets.find((m) => m.key === "totals");
@@ -102,6 +89,7 @@ export default async function GameCenterPage({ params }: { params: Promise<{ gam
             <p className="text-sm text-brand-muted">{gameWeekTitle(game.seasonType, game.week)} · {kickoffDisplay(game.scheduledAt)}</p>
             <p className="text-xs text-brand-muted">{game.venue || game.homeTeam.stadium}{game.broadcast ? ` · ${game.broadcast}` : ""}</p>
             <LiveGamePoller gameId={game.id} />
+            {markets.length ? <Link href="#make-pick" className="btn-primary min-h-11">Make a pick</Link> : null}
           </div>
         </div>
 
@@ -145,7 +133,7 @@ export default async function GameCenterPage({ params }: { params: Promise<{ gam
           <section>
             <SectionTitle sub="Community picks on this game">Predictions</SectionTitle>
             {full.predictions.length === 0 ? (
-              <EmptyState title="No predictions yet" body="Be the first to publish a pick on this game." />
+              <EmptyState title="No predictions yet" body="Be the first to publish a pick on this game." action={{ href: "#make-pick", label: "Make a pick" }} />
             ) : (
               <div className="space-y-3">
                 {full.predictions.map((p) => (
@@ -181,8 +169,8 @@ export default async function GameCenterPage({ params }: { params: Promise<{ gam
             {full.teamStats.length === 0 ? (
               <EmptyState title="Stats appear after the final whistle" body="Full box score lands when the game settles." />
             ) : (
-              <div className="overflow-hidden rounded-xl border border-brand-border">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto rounded-xl border border-brand-border">
+                <table className="w-full min-w-[620px] text-sm">
                   <thead className="bg-brand-surface">
                     <tr>
                       <th className="table-head px-4 py-2.5">Team</th>
@@ -238,22 +226,19 @@ export default async function GameCenterPage({ params }: { params: Promise<{ gam
         </div>
 
         {/* sidebar */}
-        <aside className="space-y-6">
-          {user ? (
-            <section>
-              <SectionTitle sub="Locked at kickoff">Make a Prediction</SectionTitle>
-              <PredictionBuilder game={{ id: game.id, homeAbbr: game.homeTeam.abbreviation, awayAbbr: game.awayTeam.abbreviation }} markets={markets} />
-            </section>
-          ) : (
-            <Card>
-              <p className="font-display text-lg text-brand-text">Join free to predict</p>
-              <p className="mt-1 text-sm text-brand-muted">Publish picks, earn XP and coins, climb the leaderboard.</p>
-              <div className="mt-4 flex gap-2">
-                <Link href="/auth/sign-up" className="btn-primary">Join Free</Link>
-                <Link href="/auth/sign-in" className="btn-secondary">Log in</Link>
-              </div>
-            </Card>
-          )}
+        <aside className="order-first space-y-6 lg:order-last" id="make-pick">
+          <section>
+            <SectionTitle sub={user ? "Provider-checked again when you publish" : "Choose now, then join or sign in without losing this pick"}>Make a prediction</SectionTitle>
+            {markets.length ? (
+              <PredictionBuilder authenticated={Boolean(user)} game={{ id: game.id, homeAbbr: game.homeTeam.abbreviation, awayAbbr: game.awayTeam.abbreviation }} markets={markets} />
+            ) : (
+              <Card>
+                <p className="font-display text-lg text-brand-text">{predictionOptions?.availability === "STALE" ? "Odds are refreshing" : game.status === "SCHEDULED" ? "Picks are not open yet" : "Picks are closed"}</p>
+                <p className="mt-1 text-sm text-brand-muted">{predictionOptions?.reason ?? "Verified prediction markets are unavailable for this game."}</p>
+                <Link href="/predict" className="btn-secondary mt-4 min-h-11">Open the pick board</Link>
+              </Card>
+            )}
+          </section>
 
           {gameInjuries.length ? (
             <section>

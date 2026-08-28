@@ -83,8 +83,8 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-primary">Research library</p><h2 className="mt-2 font-display text-3xl font-bold text-brand-text">{category ? category : "Latest NFL analysis"}</h2><p className="mt-2 text-sm text-brand-muted">{total} source-backed {total === 1 ? "article" : "articles"}{category ? " in this topic" : " and growing"}.</p></div>
           <nav aria-label="Filter articles by category" className="flex flex-wrap gap-2">
-            <Link href="/blog#latest-analysis" className={`tab ring-1 ${!category ? "tab-active ring-brand-primary/20" : "bg-white ring-brand-border"}`}>All topics</Link>
-            {categories.map((item) => <Link key={item.category} href={`/blog?category=${encodeURIComponent(item.category)}#latest-analysis`} className={`tab ring-1 ${category?.toLowerCase() === item.category.toLowerCase() ? "tab-active ring-brand-primary/20" : "bg-white ring-brand-border"}`}>{item.category} <span className="text-xs opacity-60">{item.count}</span></Link>)}
+            <Link href="/blog#latest-analysis" className={`tab ring-1 ${!category ? "tab-active ring-brand-primary/20" : "bg-brand-surface ring-brand-border"}`}>All topics</Link>
+            {categories.map((item) => <Link key={item.category} href={`/blog?category=${encodeURIComponent(item.category)}#latest-analysis`} className={`tab ring-1 ${category?.toLowerCase() === item.category.toLowerCase() ? "tab-active ring-brand-primary/20" : "bg-brand-surface ring-brand-border"}`}>{item.category} <span className="text-xs opacity-60">{item.count}</span></Link>)}
           </nav>
         </div>
 
@@ -101,7 +101,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
         ) : null}
       </section>
 
-      <section className="rounded-[28px] border border-brand-border bg-white p-7 shadow-sm lg:p-10">
+      <section className="rounded-[28px] border border-brand-border bg-brand-surface p-7 shadow-sm lg:p-10">
         <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr]">
           <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-primary">How to use this library</p><h2 className="mt-3 font-display text-3xl font-bold text-brand-text">Stable guides meet live NFL data</h2></div>
           <div className="space-y-4 text-[15px] leading-7 text-brand-muted">

@@ -21,7 +21,7 @@ export default async function NflPredictionsPage() {
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "NFL", href: "/nfl" }, { label: "Predictions" }]} />
       <SeoHubShell title="NFL Predictions & Picks" description="The best community NFL picks, ranked by a deterministic trending score. Every pick settles automatically when the game ends.">
         {preds.length === 0 ? (
-          <EmptyState title="No predictions yet" body="Publish the first pick of the season." />
+          <EmptyState title="No predictions yet" body="Publish the first pick of the season." action={{ href: "/predict", label: "Open the pick board" }} />
         ) : (
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {preds.map((p) => (

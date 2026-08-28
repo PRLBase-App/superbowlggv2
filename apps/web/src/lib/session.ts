@@ -8,7 +8,7 @@ export async function getSession() {
   if (!session?.user) return null;
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true, status: true, isAdmin: true, emailVerified: true, email: true },
+    select: { role: true, status: true, isAdmin: true, emailVerified: true, email: true, themePreference: true },
   });
   if (!user || user.status !== "ACTIVE" || !user.emailVerified) return null;
 
@@ -19,7 +19,7 @@ export async function getSession() {
     const elevated = await prisma.user.update({
       where: { id: session.user.id },
       data: { isAdmin: true, role: "SUPER_ADMIN" },
-      select: { role: true, status: true, isAdmin: true, emailVerified: true, email: true },
+      select: { role: true, status: true, isAdmin: true, emailVerified: true, email: true, themePreference: true },
     });
     return { ...session, user: { ...session.user, ...elevated } };
   }
@@ -35,6 +35,7 @@ export interface SessionUserView {
   coins: number;
   role: string;
   isAdmin: boolean;
+  themePreference: "LIGHT" | "DARK" | "SYSTEM";
 }
 
 /** Session + wallet snapshot for the header. */
@@ -51,6 +52,7 @@ export async function getSessionUser(): Promise<SessionUserView | null> {
     coins: wallet?.balance ?? 0,
     role: session.user.role,
     isAdmin: session.user.isAdmin,
+    themePreference: session.user.themePreference,
   };
 }
 

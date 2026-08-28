@@ -4,6 +4,7 @@ import { getTeams } from "@/lib/data";
 import { prisma } from "@sbgg/db";
 import { SectionTitle } from "@/components/ui";
 import { ProfileForm } from "@/components/profile-form";
+import { ThemeSelector } from "@/components/theme-selector";
 
 export const metadata: Metadata = { title: "Settings", description: "Manage your Superbowl.gg profile and account." };
 
@@ -21,6 +22,7 @@ export default async function SettingsPage() {
       <SectionTitle sub="Public profile, account security and notification preferences">
         <span className="text-brand-text">Settings</span>
       </SectionTitle>
+      <ThemeSelector initialTheme={session.user.themePreference} />
       <ProfileForm
         profile={profile ? { bio: profile.bio ?? "", displayName: profile.displayName ?? "", username: profile.username } : null}
         teams={teams.map((t) => ({ id: t.id, abbr: t.abbreviation, name: t.name }))}

@@ -13,6 +13,8 @@ import { checkAchievements, grantXpAndCoins, recordSettlementRewards } from "@sb
 import { settlePrediction } from "@sbgg/core";
 import { XMLParser } from "fast-xml-parser";
 import { matchNewsTeam } from "./news";
+import { needsSettlementRecovery } from "./settlement";
+export { needsSettlementRecovery } from "./settlement";
 
 const SPORTS_PROVIDER = providerName();
 const ODDS_PROVIDER = "the-odds-api";
@@ -846,15 +848,30 @@ export async function settlePredictions(): Promise<JobResult> {
     });
 
     const predictions = await prisma.prediction.findMany({
-      where: { game: { status: "FINAL" }, status: { in: ["LOCKED", "SETTLED", "VOIDED"] } },
+      where: {
+        game: { status: "FINAL" },
+        OR: [
+          { status: "LOCKED" },
+          {
+            status: { in: ["SETTLED", "VOIDED"] },
+            OR: [
+              { rewardsProcessedAt: null },
+              { achievementsProcessedAt: null },
+              { notificationProcessedAt: null },
+            ],
+          },
+        ],
+      },
       include: { game: { include: { homeTeam: true, awayTeam: true } }, settlement: true },
       orderBy: { publishedAt: "asc" },
       take: 1_000,
     });
     let processed = 0;
     for (const prediction of predictions) {
+      if (!needsSettlementRecovery(prediction)) continue;
+      let didWork = false;
       let propValue: number | null | undefined;
-      if (prediction.marketType === "PLAYER_PROP") {
+      if (prediction.marketType === "PLAYER_PROP" && !prediction.settlement) {
         if (!prediction.playerId) propValue = undefined;
         else {
           const stats = await prisma.playerGameStats.findUnique({
@@ -864,7 +881,7 @@ export async function settlePredictions(): Promise<JobResult> {
           propValue = playerPropValue(prediction.marketKey, stats);
         }
       }
-      const computed = computePredictionResult({
+      const computed = prediction.settlement?.result ?? computePredictionResult({
         marketType: prediction.marketType,
         selection: prediction.selection,
         line: prediction.line,
@@ -875,43 +892,58 @@ export async function settlePredictions(): Promise<JobResult> {
       const reason = settlementReason(prediction.marketType, computed, propValue);
       const result = prediction.settlement?.result ?? computed;
 
-      await prisma.$transaction(async (tx) => {
-        await tx.predictionSettlement.upsert({
-          where: { predictionId: prediction.id },
-          update: {},
-          create: {
-            predictionId: prediction.id,
-            result,
-            settlementReason: reason,
-            settlementSource: prediction.marketType === "PLAYER_PROP" ? `${SPORTS_PROVIDER}:player-stats` : `${SPORTS_PROVIDER}:final-score`,
-            settlementVersion: 1,
-            settledAt: now,
-          },
+      if (!prediction.settlement || prediction.status === "LOCKED") {
+        await prisma.$transaction(async (tx) => {
+          await tx.predictionSettlement.upsert({
+            where: { predictionId: prediction.id },
+            update: {},
+            create: {
+              predictionId: prediction.id,
+              result,
+              settlementReason: reason,
+              settlementSource: prediction.marketType === "PLAYER_PROP" ? `${SPORTS_PROVIDER}:player-stats` : `${SPORTS_PROVIDER}:final-score`,
+              settlementVersion: 1,
+              settledAt: now,
+            },
+          });
+          await tx.prediction.update({
+            where: { id: prediction.id },
+            data: { status: result === "VOID" ? "VOIDED" : "SETTLED", result, settledAt: prediction.settledAt ?? now },
+          });
         });
-        await tx.prediction.update({
-          where: { id: prediction.id },
-          data: { status: result === "VOID" ? "VOIDED" : "SETTLED", result, settledAt: prediction.settledAt ?? now },
-        });
-      });
-
-      await recordSettlementRewards(prediction.userId, result, prediction.oddsAtCreation, prediction.id);
-      await checkAchievements(prediction.userId);
-      const preferences = await prisma.notificationPreference.findUnique({ where: { userId: prediction.userId } });
-      if (preferences?.predictionSettled ?? true) {
-        await prisma.notification.upsert({
-          where: { dedupeKey: `prediction-settled:${prediction.id}` },
-          update: {},
-          create: {
-            userId: prediction.userId,
-            type: "PREDICTION_SETTLED",
-            title: result === "WIN" ? "Prediction won 🏈" : result === "PUSH" ? "Prediction pushed" : result === "VOID" ? "Prediction voided" : "Prediction lost",
-            body: `${prediction.game.awayTeam.abbreviation} at ${prediction.game.homeTeam.abbreviation} — ${prediction.selection} settled ${result}.`,
-            link: `/predictions/${prediction.id}`,
-            dedupeKey: `prediction-settled:${prediction.id}`,
-          },
-        });
+        didWork = true;
       }
-      processed++;
+
+      if (!prediction.rewardsProcessedAt) {
+        await recordSettlementRewards(prediction.userId, result, prediction.oddsAtCreation, prediction.id);
+        await prisma.prediction.update({ where: { id: prediction.id }, data: { rewardsProcessedAt: new Date() } });
+        didWork = true;
+      }
+      if (!prediction.achievementsProcessedAt) {
+        await checkAchievements(prediction.userId);
+        await prisma.prediction.update({ where: { id: prediction.id }, data: { achievementsProcessedAt: new Date() } });
+        didWork = true;
+      }
+      if (!prediction.notificationProcessedAt) {
+        const preferences = await prisma.notificationPreference.findUnique({ where: { userId: prediction.userId } });
+        if (preferences?.predictionSettled ?? true) {
+          await prisma.notification.upsert({
+            where: { dedupeKey: `prediction-settled:${prediction.id}` },
+            update: {},
+            create: {
+              userId: prediction.userId,
+              type: "PREDICTION_SETTLED",
+              title: result === "WIN" ? "Prediction won 🏈" : result === "PUSH" ? "Prediction pushed" : result === "VOID" ? "Prediction voided" : "Prediction lost",
+              body: `${prediction.game.awayTeam.abbreviation} at ${prediction.game.homeTeam.abbreviation} — ${prediction.selection} settled ${result}.`,
+              link: `/predictions/${prediction.id}`,
+              dedupeKey: `prediction-settled:${prediction.id}`,
+            },
+          });
+        }
+        await prisma.prediction.update({ where: { id: prediction.id }, data: { notificationProcessedAt: new Date() } });
+        didWork = true;
+      }
+      if (didWork) processed++;
     }
     return { processed };
   });

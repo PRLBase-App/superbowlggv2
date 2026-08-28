@@ -78,7 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     sameAs: ["https://x.com/superbowldotgg"],
   };
   return (
-    <html lang="en" className={`${inter.variable} ${oswald.variable}`}>
+    <html lang="en" className={`${inter.variable} ${oswald.variable}`} data-theme={user?.themePreference ?? "LIGHT"}>
       <head>
         {canonical ? <link rel="canonical" href={canonical} /> : null}
       </head>

@@ -76,15 +76,15 @@ export function ArticleEditor({ initialValue, authors }: { initialValue: Article
 
   return (
     <form onSubmit={save} className="space-y-6">
-      <div className="sticky top-24 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-border bg-white/95 p-3 shadow-lg backdrop-blur">
+      <div className="sticky top-24 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-border bg-brand-surface/95 p-3 shadow-lg backdrop-blur">
         <div className="flex flex-wrap items-center gap-2 text-xs text-brand-muted"><span>{words.toLocaleString()} words</span><span aria-hidden>·</span><span>{articleReadingMinutes(value.body)} min read</span><span aria-hidden>·</span><span>{value.status.toLowerCase()}</span></div>
         <div className="flex flex-wrap gap-2"><button type="button" className="btn-secondary" onClick={() => setPreview((open) => !open)}><Eye className="h-4 w-4" /> {preview ? "Edit" : "Preview"}</button><button type="submit" className="btn-primary" disabled={saving}><Save className="h-4 w-4" /> {saving ? "Saving…" : value.status === "PUBLISHED" ? "Save & publish" : "Save article"}</button></div>
       </div>
 
-      {message ? <p role="status" className={`rounded-xl border px-4 py-3 text-sm font-medium ${message.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>{message.text}</p> : null}
+      {message ? <p role="status" className={`rounded-xl border px-4 py-3 text-sm font-medium ${message.tone === "success" ? "border-brand-success/30 bg-brand-success/10 text-brand-success" : "border-brand-danger/30 bg-brand-danger/10 text-brand-danger"}`}>{message.text}</p> : null}
 
       {preview ? (
-        <div className="rounded-[24px] border border-brand-border bg-white px-5 py-8 shadow-sm sm:px-10"><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-primary">Preview</p><h1 className="mt-3 font-display text-4xl font-bold text-brand-text">{value.title || "Untitled article"}</h1><p className="mt-3 border-b border-brand-border pb-6 text-brand-muted">{value.excerpt}</p><div className="mt-7"><ArticleContent body={value.body || "Start writing to preview the article."} /></div></div>
+        <div className="rounded-[24px] border border-brand-border bg-brand-surface px-5 py-8 shadow-sm sm:px-10"><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-primary">Preview</p><h1 className="mt-3 font-display text-4xl font-bold text-brand-text">{value.title || "Untitled article"}</h1><p className="mt-3 border-b border-brand-border pb-6 text-brand-muted">{value.excerpt}</p><div className="mt-7"><ArticleContent body={value.body || "Start writing to preview the article."} /></div></div>
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-5">

@@ -29,7 +29,7 @@ export default async function AuthorPage({ params }: { params: Promise<{ slug: s
       <header className="yardlines relative overflow-hidden rounded-[28px] bg-brand-nav p-7 text-white sm:p-10">
         <Image src="/logo.svg" alt="" width={150} height={150} className="absolute -bottom-7 right-6 opacity-10 brightness-0 invert" />
         <div className="relative flex max-w-4xl flex-col gap-5 sm:flex-row sm:items-center">
-          <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-2 shadow-xl"><Image src={author.avatarUrl || "/logo.svg"} alt="" width={80} height={80} className="h-full w-full object-contain" /></span>
+          <span className="logo-tile flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl p-2 shadow-xl"><Image src={author.avatarUrl || "/logo.svg"} alt="" width={80} height={80} className="h-full w-full object-contain" /></span>
           <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-[#9dd3ff]">{author.type === "PERSON" ? "Author" : "Editorial team"}</p><h1 className="mt-2 font-display text-4xl font-bold text-white">{author.name}</h1>{author.role ? <p className="mt-2 text-sm font-semibold text-white/65">{author.role}</p> : null}<p className="mt-4 max-w-3xl text-sm leading-6 text-white/70">{author.bio}</p></div>
         </div>
       </header>

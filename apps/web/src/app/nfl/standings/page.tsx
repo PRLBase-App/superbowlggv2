@@ -37,9 +37,9 @@ export default async function NflStandingsPage() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-2">
             {Object.entries(grouped).map(([key, rows]) => (
-              <div key={key} className="overflow-hidden rounded-xl border border-brand-border">
+              <div key={key} className="overflow-x-auto rounded-xl border border-brand-border">
                 <h2 className="bg-brand-surface px-4 py-2.5 font-display text-sm font-semibold text-brand-text">{key}</h2>
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[560px] text-sm">
                   <thead className="bg-brand-surface/60">
                     <tr>
                       <th className="table-head px-4 py-2">Team</th>

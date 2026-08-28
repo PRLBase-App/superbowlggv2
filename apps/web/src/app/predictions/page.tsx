@@ -22,7 +22,10 @@ export default async function PredictionsPage({ searchParams }: { searchParams: 
 
   return (
     <div className="space-y-6">
-      <SectionTitle sub="Community picks, settled automatically">Predictions</SectionTitle>
+      <div className="flex items-end justify-between gap-3">
+        <SectionTitle sub="Community picks, settled automatically">Predictions</SectionTitle>
+        <Link href="/predict" className="btn-primary min-h-11">Make a pick</Link>
+      </div>
 
       <div className="flex flex-wrap gap-2">
         <Link href="/predictions" className={`tab ${filter === "newest" ? "tab-active" : ""}`}>Newest</Link>
@@ -35,7 +38,7 @@ export default async function PredictionsPage({ searchParams }: { searchParams: 
       </div>
 
       {preds.length === 0 ? (
-        <EmptyState title="No predictions yet" body="Publish the first pick and start building your record." />
+        <EmptyState title="No predictions yet" body="Publish the first pick and start building your record." action={{ href: "/predict", label: "Open the pick board" }} />
       ) : (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {preds.map((p) => (

@@ -106,7 +106,8 @@ export function ProfileForm({ profile, teams, favoriteTeamId, email, prefs }: Pr
         </div>
         <div>
           <label className="label" htmlFor="npw">New password</label>
-          <input id="npw" type="password" className="input" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={8} autoComplete="new-password" />
+          <input id="npw" type="password" className="input" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={12} autoComplete="new-password" />
+          <p className="mt-1.5 text-xs text-brand-muted">Use at least 12 characters.</p>
         </div>
       </div>
 
@@ -120,8 +121,8 @@ export function ProfileForm({ profile, teams, favoriteTeamId, email, prefs }: Pr
             ["achievementUnlocked", "Achievements"],
             ["marketplace", "Marketplace & rewards"],
           ].map(([k, label]) => (
-            <label key={k} className="flex cursor-pointer items-center gap-2 text-sm text-brand-muted">
-              <input type="checkbox" checked={notifPrefs[k] ?? true} onChange={() => toggle(k)} className="h-4 w-4 accent-brand-primary" />
+            <label key={k} className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-brand-muted">
+              <input type="checkbox" checked={notifPrefs[k] ?? true} onChange={() => toggle(k)} className="h-5 w-5 accent-brand-primary" />
               {label}
             </label>
           ))}

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-export function SocialAuthComplete({ referralCode }: { referralCode?: string }) {
+export function SocialAuthComplete({ referralCode, returnTo }: { referralCode?: string; returnTo: string }) {
   const [error, setError] = useState<string | null>(null);
 
   const complete = useCallback(async () => {
@@ -19,11 +19,11 @@ export function SocialAuthComplete({ referralCode }: { referralCode?: string }) 
         setError(result?.error ?? "Account setup could not be completed.");
         return;
       }
-      window.location.replace("/");
+      window.location.replace(returnTo);
     } catch {
       setError("Account setup is temporarily unavailable.");
     }
-  }, [referralCode]);
+  }, [referralCode, returnTo]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => { void complete(); }, 0);
@@ -38,7 +38,7 @@ export function SocialAuthComplete({ referralCode }: { referralCode?: string }) 
   return (
     <div className="mx-auto w-full max-w-md">
       <div className="card text-center">
-        <span className="mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white p-0.5 shadow-[0_8px_24px_rgba(19,21,32,0.12)]">
+        <span className="logo-tile mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl p-0.5 shadow-[0_8px_24px_rgba(19,21,32,0.12)]">
           <Image src="/logo.svg" alt="" width={56} height={56} priority className="h-full w-full object-contain" />
         </span>
         <h1 className="mt-4 font-display text-2xl font-semibold text-brand-text">Finishing your account</h1>

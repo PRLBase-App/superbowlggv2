@@ -14,6 +14,7 @@ const NFL_LINKS = [
 ];
 
 const COMMUNITY_LINKS = [
+  { href: "/predict", label: "Make a prediction" },
   { href: "/games", label: "Upcoming game center" },
   { href: "/predictions", label: "Community prediction feed" },
   { href: "/leaderboard", label: "Predictor rankings" },
@@ -44,7 +45,7 @@ export function SiteFooter() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.35fr_1fr_1fr_0.8fr]">
           <div>
             <Link href="/" className="inline-flex items-center gap-2" aria-label="Superbowl.gg home">
-              <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5">
+              <span className="logo-tile flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl p-0.5">
                 <Image src="/logo.svg" alt="" width={44} height={44} className="h-full w-full object-contain" />
               </span>
               <span className="text-[21px] font-black leading-none tracking-[-0.055em] text-white">

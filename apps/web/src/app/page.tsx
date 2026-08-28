@@ -86,9 +86,9 @@ export default async function HomePage() {
               Real NFL schedules, attributed news, provider-sourced statistics and community predictions come together in one season-long football platform.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/games" className="btn-primary">Open the 2026 game line <ArrowRight className="h-4 w-4" /></Link>
-              <Link href={user ? "/predictions" : "/auth/sign-up"} className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/16">
-                {user ? "View community analysis" : "Join with 1,000 virtual coins"}
+              <Link href="/predict" className="btn-primary">Make a quick pick <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/predictions" className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/16">
+                View community predictions
               </Link>
             </div>
           </div>
@@ -137,7 +137,7 @@ export default async function HomePage() {
         </div>
         <aside className="card h-fit overflow-hidden !p-0 lg:sticky lg:top-28">
           <div className="bg-[#0d393a] p-5 text-white"><p className="text-xs font-bold uppercase tracking-[0.14em] text-white/50">Prediction coupon</p><h2 className="mt-2 font-display text-2xl font-semibold">Build your next pick</h2><p className="mt-2 text-sm leading-6 text-white/65">Choose a real scheduled game, select an available market and publish your reasoning before kickoff.</p></div>
-          <div className="space-y-4 p-5">{["Select a verified matchup", "Choose moneyline, spread or total", "Set confidence and explain your read"].map((step, index) => <div key={step} className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-primary/10 text-xs font-bold text-brand-primary">{index + 1}</span><p className="text-sm font-medium text-brand-text">{step}</p></div>)}<Link href="/games" className="btn-primary mt-2 w-full">Start from the game center</Link><p className="text-center text-[11px] text-brand-muted">Virtual coins only. Superbowl.gg does not accept wagers.</p></div>
+          <div className="space-y-4 p-5">{["Select a verified matchup", "Choose moneyline, spread or total", "Set confidence and explain your read"].map((step, index) => <div key={step} className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-primary/10 text-xs font-bold text-brand-primary">{index + 1}</span><p className="text-sm font-medium text-brand-text">{step}</p></div>)}<Link href="/predict" className="btn-primary mt-2 w-full">Open the pick board</Link><p className="text-center text-[11px] text-brand-muted">Virtual coins only. Superbowl.gg does not accept wagers.</p></div>
         </aside>
       </section>
 
@@ -149,13 +149,13 @@ export default async function HomePage() {
               <div><p className="text-sm font-bold text-brand-text">@{prediction.user.profile?.username ?? "predictor"}</p><p className="mt-1 text-xs text-brand-muted">{prediction.game.awayTeam.abbreviation} at {prediction.game.homeTeam.abbreviation} · {gameWeekLabel(prediction.game.seasonType, prediction.game.week)}</p><p className="mt-2 text-sm font-semibold text-brand-primary">{prediction.marketType}: {prediction.selection}{prediction.line != null ? ` (${prediction.line})` : ""}</p></div>
               <div className="text-right"><Badge tone="blue">{prediction.confidence}</Badge><p className="mt-2 text-xs text-brand-muted">Odds {prediction.oddsAtCreation}</p></div>
             </Link>
-          ))}{!trending.length ? <EmptyState title="No 2026 predictions yet" body="The feed opens as soon as current-season games are available." /> : null}</div>
+          ))}{!trending.length ? <EmptyState title="No 2026 predictions yet" body="The feed opens as soon as current-season games are available." action={{ href: "/predict", label: "Open the pick board" }} /> : null}</div>
         </div>
         <div>
           <SectionTitle sub="Transparent records from settled community predictions"><Link href="/leaderboard" className="text-brand-text hover:text-brand-primary">Top predictors</Link></SectionTitle>
           <div className="space-y-2">{leaderboard.map((row, index) => (
             <Link key={row.user.id} href={`/users/${row.user.profile?.username ?? row.user.email}`} className="card card-hover flex items-center justify-between">
-              <div className="flex items-center gap-3"><span className={`flex h-9 w-9 items-center justify-center rounded-xl font-display text-lg font-bold ${index === 0 ? "bg-amber-50 text-brand-gold" : "bg-brand-primary/10 text-brand-primary"}`}>{index + 1}</span><div><p className="text-sm font-bold text-brand-text">{row.user.profile?.displayName ?? row.user.name}</p><p className="text-xs text-brand-muted">@{row.user.profile?.username ?? "predictor"}</p></div></div>
+              <div className="flex items-center gap-3"><span className={`flex h-9 w-9 items-center justify-center rounded-xl font-display text-lg font-bold ${index === 0 ? "bg-brand-gold/15 text-brand-gold" : "bg-brand-primary/10 text-brand-primary"}`}>{index + 1}</span><div><p className="text-sm font-bold text-brand-text">{row.user.profile?.displayName ?? row.user.name}</p><p className="text-xs text-brand-muted">@{row.user.profile?.username ?? "predictor"}</p></div></div>
               <div className="text-right"><p className="scoreboard-num font-bold text-brand-text">{Math.round(row.accuracy * 100)}%</p><p className="text-xs text-brand-muted">{row.settled} settled</p></div>
             </Link>
           ))}{!leaderboard.length ? <EmptyState title="The leaderboard awaits its first qualifiers" body="Minimum sample rules prevent misleading rankings." /> : null}</div>
@@ -176,7 +176,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="grid gap-8 rounded-[28px] border border-brand-border bg-white p-7 shadow-sm lg:grid-cols-2 lg:p-10">
+      <section className="grid gap-8 rounded-[28px] border border-brand-border bg-brand-surface p-7 shadow-sm lg:grid-cols-2 lg:p-10">
         <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-primary">A season-long football platform</p><h2 className="mt-3 font-display text-3xl font-bold text-brand-text">One useful home for the 2026 NFL season</h2><div className="mt-5 space-y-4 text-[15px] leading-7 text-brand-muted"><p>Football coverage becomes fragmented quickly. One site has the schedule, another has a headline, a third shows an odds snapshot, and community opinions disappear into fast-moving social feeds. This platform connects those pieces around the games themselves, so every prediction has a real matchup, kickoff time and settlement source behind it.</p><p>The current experience follows the official NFL convention: the season that starts in August and September 2026 is the 2026 NFL season. Its postseason concludes in early 2027, culminating with Super Bowl LXI. Historical results still matter for context, but they are labeled as archives and never presented as if they were current standings or current player production.</p><p>Every public prediction creates a track record. Wins, losses, pushes, odds at publication and sample size remain visible, which makes the leaderboard more meaningful than a collection of unsupported hot takes. Minimum sample thresholds also prevent one lucky result from outranking a predictor with a sustained record.</p></div></div>
         <div className="grid gap-4 sm:grid-cols-2">{[
           { icon: Newspaper, title: "Attributed NFL news", body: "Read current headlines and summaries from the syndicated ESPN feed, then continue directly to the original reporting." },
@@ -199,7 +199,7 @@ export default async function HomePage() {
 
       <section className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr]">
         <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-primary">Useful answers</p><h2 className="mt-3 font-display text-3xl font-bold text-brand-text">About the season, data and predictions</h2><p className="mt-4 text-sm leading-7 text-brand-muted">These answers explain how current-year coverage works and where the platform draws a firm line between community opinion and verified sports data.</p></div>
-        <div className="space-y-3">{FAQ.map((item) => <details key={item.question} className="group rounded-2xl border border-brand-border bg-white p-5 shadow-sm"><summary className="cursor-pointer list-none font-display text-lg font-semibold normal-case text-brand-text"><span className="flex items-center justify-between gap-4">{item.question}<span className="text-brand-primary transition group-open:rotate-45">+</span></span></summary><p className="mt-3 text-sm leading-7 text-brand-muted">{item.answer}</p></details>)}</div>
+        <div className="space-y-3">{FAQ.map((item) => <details key={item.question} className="group rounded-2xl border border-brand-border bg-brand-surface p-5 shadow-sm"><summary className="cursor-pointer list-none font-display text-lg font-semibold normal-case text-brand-text"><span className="flex items-center justify-between gap-4">{item.question}<span className="text-brand-primary transition group-open:rotate-45">+</span></span></summary><p className="mt-3 text-sm leading-7 text-brand-muted">{item.answer}</p></details>)}</div>
       </section>
 
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-brand-border pt-6 text-xs text-brand-muted"><span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-brand-success" /> No fabricated schedules or statistics</span><span>Sports data attribution: nflverse</span><span>News attribution: ESPN RSS</span></div>

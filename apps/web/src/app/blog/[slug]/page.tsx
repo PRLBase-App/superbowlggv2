@@ -104,11 +104,11 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </header>
 
         <div className="mx-auto mt-8 grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,760px)_270px] lg:items-start">
-          <div className="min-w-0 rounded-[24px] border border-brand-border bg-white px-5 py-7 shadow-sm sm:px-9 sm:py-10">
+          <div className="min-w-0 rounded-[24px] border border-brand-border bg-brand-surface px-5 py-7 shadow-sm sm:px-9 sm:py-10">
             <ArticleContent body={article.body} />
 
             {oddsEducation ? (
-              <aside className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950">
+              <aside className="mt-10 rounded-2xl border border-brand-warning/30 bg-brand-warning/10 p-5 text-sm leading-6 text-brand-text">
                 <div className="flex items-start gap-3"><ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-bold">Odds education, not betting advice</p><p className="mt-1 text-amber-900/80">Superbowl.gg does not accept real-money wagers. Markets can move and outcomes are uncertain. If you choose to gamble elsewhere, use licensed services, set limits and visit our <Link href="/responsible-gaming" className="font-semibold underline">responsible gaming resources</Link>.</p></div></div>
               </aside>
             ) : null}
