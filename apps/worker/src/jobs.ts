@@ -13,6 +13,7 @@ import { checkAchievements, grantXpAndCoins, recordSettlementRewards } from "@sb
 import { settlePrediction } from "@sbgg/core";
 import { XMLParser } from "fast-xml-parser";
 import { matchNewsTeam } from "./news";
+import { shouldCaptureOddsSnapshot } from "./odds-snapshot";
 import { needsSettlementRecovery } from "./settlement";
 export { needsSettlementRecovery } from "./settlement";
 
@@ -631,8 +632,7 @@ async function persistOddsEvent(gameId: string, event: GameOdds): Promise<number
           where: { marketId: market.id, outcomeKey: outcome.providerId },
           orderBy: { capturedAt: "desc" },
         });
-        if (latest && latest.capturedAt >= capturedAt) continue;
-        if (latest && latest.price === outcome.price && latest.line === outcome.point) continue;
+        if (!shouldCaptureOddsSnapshot(latest, capturedAt)) continue;
         await prisma.oddsSnapshot.create({
           data: {
             gameId,
