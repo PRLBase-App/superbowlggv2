@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const p = await getPrediction(id);
   if (!p) return { title: "Prediction not found" };
   return {
-    title: `@${p.user.profile?.username ?? "predictor"} predicts ${p.selection} (${p.oddsAtCreation})`,
+    title: `@${p.user.profile?.username ?? "predictor"} predicts ${p.selection}${p.oddsAtCreation == null ? " — community line" : ` (${p.oddsAtCreation})`}`,
     description: `${p.user.profile?.username ?? "Predictor"}'s ${p.marketType} prediction on ${p.game.awayTeam.name} @ ${p.game.homeTeam.name}.`,
     alternates: { canonical: `/predictions/${p.id}` },
   };
@@ -53,7 +53,7 @@ export default async function PredictionPage({ params }: { params: Promise<{ id:
         <dl className="mt-6 grid gap-3 sm:grid-cols-2">
           <div className="card !p-3"><dt className="text-xs text-brand-muted">Market</dt><dd className="mt-0.5 text-sm font-semibold text-brand-text">{p.marketType === "MONEYLINE" ? "Moneyline" : p.marketType === "SPREAD" ? "Spread" : p.marketType === "TOTAL" ? "Total" : "Player prop"}</dd></div>
           <div className="card !p-3"><dt className="text-xs text-brand-muted">Selection</dt><dd className="mt-0.5 text-sm font-semibold text-brand-text">{p.selection === "home" ? p.game.homeTeam.name : p.selection === "away" ? p.game.awayTeam.name : p.selection}{p.player ? ` — ${p.player.name}` : ""}{p.line != null ? ` ${p.line > 0 ? "+" : ""}${p.line}` : ""}</dd></div>
-          <div className="card !p-3"><dt className="text-xs text-brand-muted">Odds at creation</dt><dd className="scoreboard-num mt-0.5 text-sm font-semibold text-brand-primary">{p.oddsAtCreation}</dd></div>
+          <div className="card !p-3"><dt className="text-xs text-brand-muted">Pricing source</dt><dd className="mt-0.5 text-sm font-semibold text-brand-primary">{p.oddsAtCreation == null ? "No sportsbook odds / Community line" : `Odds at creation ${p.oddsAtCreation}`}</dd></div>
           <div className="card !p-3"><dt className="text-xs text-brand-muted">Confidence</dt><dd className="mt-0.5 text-sm font-semibold text-brand-text">{p.confidence}</dd></div>
           <div className="card !p-3"><dt className="text-xs text-brand-muted">Units</dt><dd className="mt-0.5 text-sm font-semibold text-brand-text">{p.virtualUnits}</dd></div>
           <div className="card !p-3"><dt className="text-xs text-brand-muted">Published</dt><dd className="mt-0.5 text-sm font-semibold text-brand-text">{p.publishedAt.toLocaleString()}</dd></div>

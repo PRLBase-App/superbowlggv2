@@ -124,12 +124,19 @@ export async function recordDailyActivity(userId: string, now = new Date()): Pro
 export async function recordSettlementRewards(
   userId: string,
   result: "WIN" | "LOSS" | "PUSH" | "VOID",
-  odds: number,
+  odds: number | null,
   predictionId: string,
 ): Promise<GrantResult> {
   if (result !== "WIN") return { xp: 0, coins: 0, unlockedAchievements: [] };
-  const coins = Math.max(0, Math.round((odds - 1) * 25));
-  return grantXpAndCoins(userId, 25, coins, "REWARD", `Correct prediction @ ${odds}`, { type: "prediction-settlement", id: predictionId });
+  const coins = odds == null ? 0 : Math.max(0, Math.round((odds - 1) * 25));
+  return grantXpAndCoins(
+    userId,
+    25,
+    coins,
+    "REWARD",
+    odds == null ? "Correct community line" : `Correct prediction @ ${odds}`,
+    { type: "prediction-settlement", id: predictionId },
+  );
 }
 
 export async function checkAchievements(userId: string): Promise<string[]> {

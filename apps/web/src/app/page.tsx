@@ -147,7 +147,7 @@ export default async function HomePage() {
           <div className="space-y-3">{trending.slice(0, 4).map((prediction) => (
             <Link key={prediction.id} href={`/predictions/${prediction.id}`} className="card card-hover flex items-center justify-between gap-4">
               <div><p className="text-sm font-bold text-brand-text">@{prediction.user.profile?.username ?? "predictor"}</p><p className="mt-1 text-xs text-brand-muted">{prediction.game.awayTeam.abbreviation} at {prediction.game.homeTeam.abbreviation} · {gameWeekLabel(prediction.game.seasonType, prediction.game.week)}</p><p className="mt-2 text-sm font-semibold text-brand-primary">{prediction.marketType}: {prediction.selection}{prediction.line != null ? ` (${prediction.line})` : ""}</p></div>
-              <div className="text-right"><Badge tone="blue">{prediction.confidence}</Badge><p className="mt-2 text-xs text-brand-muted">Odds {prediction.oddsAtCreation}</p></div>
+              <div className="text-right"><Badge tone="blue">{prediction.confidence}</Badge><p className="mt-2 text-xs text-brand-muted">{prediction.oddsAtCreation == null ? "Community line · no sportsbook odds" : `Odds ${prediction.oddsAtCreation}`}</p></div>
             </Link>
           ))}{!trending.length ? <EmptyState title="No 2026 predictions yet" body="The feed opens as soon as current-season games are available." action={{ href: "/predict", label: "Open the pick board" }} /> : null}</div>
         </div>

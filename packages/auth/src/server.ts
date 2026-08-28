@@ -107,6 +107,10 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24, // 1 day
   },
   user: {
+    changeEmail: {
+      enabled: true,
+      updateEmailWithoutVerification: false,
+    },
     additionalFields: {
       role: { type: "string", defaultValue: "USER", input: false },
       isAdmin: { type: "boolean", defaultValue: false, input: false },

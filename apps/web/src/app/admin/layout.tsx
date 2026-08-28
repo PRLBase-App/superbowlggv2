@@ -9,7 +9,7 @@ const NAV = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/games", label: "Games" },
   { href: "/admin/predictions", label: "Predictions" },
-  { href: "/admin/marketplace", label: "Marketplace" },
+  { href: "/admin/marketplace", label: "Rewards Store" },
   { href: "/admin/affiliate", label: "Affiliate" },
   { href: "/admin/ads", label: "Ads" },
   { href: "/admin/gamification", label: "Gamification" },

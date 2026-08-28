@@ -39,32 +39,28 @@ export function ProfileForm({ profile, teams, favoriteTeamId, email, prefs }: Pr
     setBusy(true);
     setMsg(null);
     setErr(null);
-    const res = await fetch("/api/settings/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        displayName: displayName || undefined,
-        bio: bio || undefined,
-        favoriteTeamId: teamId || undefined,
-        email: newEmail !== email ? newEmail : undefined,
-        currentPassword: currentPassword || undefined,
-        newPassword: newPassword || undefined,
-      }),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (res.ok) {
-      // save notification prefs
-      await fetch("/api/settings/notifications", {
+    try {
+      const res = await fetch("/api/settings/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(notifPrefs),
+        body: JSON.stringify({ displayName, bio, favoriteTeamId: teamId, email: newEmail !== email ? newEmail : undefined, currentPassword: currentPassword || undefined, newPassword: newPassword || undefined }),
       });
-      setMsg("Saved ✓");
+      const body = await res.json().catch(() => ({})) as { error?: string; emailVerificationSent?: boolean };
+      if (!res.ok) throw new Error(body.error ?? "Profile save failed");
+      const notificationResponse = await fetch("/api/settings/notifications", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(notifPrefs) });
+      if (!notificationResponse.ok) {
+        const notificationBody = await notificationResponse.json().catch(() => ({})) as { error?: string };
+        setErr(`Profile saved, but notification preferences failed: ${notificationBody.error ?? "try again"}`);
+        return;
+      }
+      setMsg(body.emailVerificationSent ? "Saved. Check the new inbox to verify the email change." : "Saved ✓");
+      setCurrentPassword(""); setNewPassword("");
       router.refresh();
-    } else {
-      setErr(body.error ?? "Save failed");
+    } catch (cause) {
+      setErr(cause instanceof Error ? cause.message : "The network did not respond. Nothing is reported as saved.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   const toggle = (k: string) => setNotifPrefs((p) => ({ ...p, [k]: !p[k] }));
@@ -99,6 +95,7 @@ export function ProfileForm({ profile, teams, favoriteTeamId, email, prefs }: Pr
         <div>
           <label className="label" htmlFor="email">Email</label>
           <input id="email" type="email" className="input" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+          <p className="mt-1.5 text-xs text-brand-muted">A changed address takes effect only after Better Auth verification.</p>
         </div>
         <div>
           <label className="label" htmlFor="pw">Current password (to change password)</label>
@@ -119,7 +116,7 @@ export function ProfileForm({ profile, teams, favoriteTeamId, email, prefs }: Pr
             ["followedUserPrediction", "Predictions from people I follow"],
             ["predictionSettled", "My predictions settling"],
             ["achievementUnlocked", "Achievements"],
-            ["marketplace", "Marketplace & rewards"],
+            ["marketplace", "Rewards Store & rewards"],
           ].map(([k, label]) => (
             <label key={k} className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-brand-muted">
               <input type="checkbox" checked={notifPrefs[k] ?? true} onChange={() => toggle(k)} className="h-5 w-5 accent-brand-primary" />

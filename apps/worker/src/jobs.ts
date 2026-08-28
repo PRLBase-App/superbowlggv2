@@ -10,12 +10,12 @@ import {
 import { getSportsProvider, providerName, type GameDTO, type SeasonDTO, type TeamDTO } from "@sbgg/sports";
 import { getOddsProvider, type GameOdds, type OddsOutcome } from "@sbgg/odds";
 import { checkAchievements, grantXpAndCoins, recordSettlementRewards } from "@sbgg/gamification";
-import { settlePrediction } from "@sbgg/core";
+import { communityStatValue } from "@sbgg/core";
 import { XMLParser } from "fast-xml-parser";
 import { matchNewsTeam } from "./news";
 import { shouldCaptureOddsSnapshot } from "./odds-snapshot";
-import { needsSettlementRecovery } from "./settlement";
-export { needsSettlementRecovery } from "./settlement";
+import { computePredictionResult, needsSettlementRecovery } from "./settlement";
+export { computePredictionResult, needsSettlementRecovery } from "./settlement";
 
 const SPORTS_PROVIDER = providerName();
 const ODDS_PROVIDER = "the-odds-api";
@@ -794,30 +794,6 @@ export async function syncNews(): Promise<JobResult> {
   });
 }
 
-export interface SettlementInput {
-  marketType: PredictionMarket | string;
-  selection: string;
-  line: number | null;
-  homeScore: number;
-  awayScore: number;
-  playerPropValue?: number | null;
-}
-
-/** Pure settlement engine used by the worker and unit tests. */
-export function computePredictionResult(input: SettlementInput): SettlementResult {
-  if (!(["MONEYLINE", "SPREAD", "TOTAL", "PLAYER_PROP"] as const).includes(input.marketType as PredictionMarket)) {
-    return "VOID";
-  }
-  return settlePrediction({
-    marketType: input.marketType as PredictionMarket,
-    selection: input.selection,
-    line: input.line,
-    homeScore: input.homeScore,
-    awayScore: input.awayScore,
-    playerStat: input.playerPropValue,
-  }).result;
-}
-
 function playerPropValue(marketKey: string, stats: PlayerGameStats): number | null | undefined {
   const key = marketKey.toLowerCase();
   if (key.includes("pass_yds") || key.includes("passing_yards")) return stats.passingYards;
@@ -831,8 +807,8 @@ function playerPropValue(marketKey: string, stats: PlayerGameStats): number | nu
 }
 
 function settlementReason(marketType: PredictionMarket, result: SettlementResult, propValue?: number | null): string {
-  if (result === "VOID") return "Market could not be settled from supported provider data";
-  if (marketType === "PLAYER_PROP") return `Settled from official player statistics (${propValue ?? 0})`;
+  if (result === "VOID") return "Required official provider statistics were unavailable; no zero value was assumed";
+  if (marketType === "PLAYER_PROP") return `Settled from official player statistics (${propValue})`;
   return result === "PUSH" ? "Official result exactly matched the line" : "Settled from the official final score";
 }
 
@@ -877,8 +853,14 @@ export async function settlePredictions(): Promise<JobResult> {
           const stats = await prisma.playerGameStats.findUnique({
             where: { gameId_playerId: { gameId: prediction.gameId, playerId: prediction.playerId } },
           });
-          if (!stats) continue;
-          propValue = playerPropValue(prediction.marketKey, stats);
+          if (!stats) {
+            if (prediction.source === "PROVIDER") continue;
+            propValue = null;
+          } else {
+            propValue = prediction.source === "COMMUNITY"
+              ? communityStatValue(prediction.marketKey, stats)
+              : playerPropValue(prediction.marketKey, stats);
+          }
         }
       }
       const computed = prediction.settlement?.result ?? computePredictionResult({
@@ -901,7 +883,9 @@ export async function settlePredictions(): Promise<JobResult> {
               predictionId: prediction.id,
               result,
               settlementReason: reason,
-              settlementSource: prediction.marketType === "PLAYER_PROP" ? `${SPORTS_PROVIDER}:player-stats` : `${SPORTS_PROVIDER}:final-score`,
+              settlementSource: prediction.marketType === "PLAYER_PROP"
+                ? `${SPORTS_PROVIDER}:player-stats:${prediction.source.toLowerCase()}`
+                : `${SPORTS_PROVIDER}:final-score`,
               settlementVersion: 1,
               settledAt: now,
             },

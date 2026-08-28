@@ -46,7 +46,7 @@ export default async function SuperBowlPredictionsPage() {
               <Link key={p.id} href={`/predictions/${p.id}`} className="card card-hover">
                 <p className="text-sm font-medium text-brand-text">@{p.user.profile?.username ?? "predictor"}</p>
                 <p className="mt-1 text-sm text-brand-muted">{p.game.awayTeam.abbreviation} @ {p.game.homeTeam.abbreviation}</p>
-                <p className="mt-2 text-sm font-semibold text-brand-text">{p.selection === "home" ? p.game.homeTeam.abbreviation : p.selection === "away" ? p.game.awayTeam.abbreviation : p.selection} · {p.oddsAtCreation}</p>
+                <p className="mt-2 text-sm font-semibold text-brand-text">{p.selection === "home" ? p.game.homeTeam.abbreviation : p.selection === "away" ? p.game.awayTeam.abbreviation : p.selection} · {p.oddsAtCreation ?? "Community line"}</p>
               </Link>
             ))}
           </div>

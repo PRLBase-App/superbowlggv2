@@ -34,12 +34,14 @@ export function levelForXp(totalXp: number): LevelInfo {
 /** Leaderboard point value of a settled prediction. */
 export function predictionPoints(opts: {
   result: "WIN" | "LOSS" | "PUSH" | "VOID";
-  odds: number;
+  odds: number | null;
   confidenceWeight?: number;
 }): number {
   switch (opts.result) {
     case "WIN":
-      return Math.round((opts.odds - 1) * 100 * (opts.confidenceWeight ?? 1));
+      return opts.odds == null
+        ? Math.round(100 * (opts.confidenceWeight ?? 1))
+        : Math.round((opts.odds - 1) * 100 * (opts.confidenceWeight ?? 1));
     case "PUSH":
       return 0;
     case "VOID":

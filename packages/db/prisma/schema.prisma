@@ -64,6 +64,11 @@ enum PredictionMarket {
   PLAYER_PROP
 }
 
+enum PredictionSource {
+  PROVIDER
+  COMMUNITY
+}
+
 enum PredictionStatus {
   PENDING
   LOCKED
@@ -710,11 +715,12 @@ model Prediction {
   userId                  String
   gameId                  String
   playerId                String? // for PLAYER_PROP
+  source                  PredictionSource  @default(PROVIDER)
   marketType              PredictionMarket
   marketKey               String // h2h_home | h2h_away | spread_home | spread_away | total_over | total_under | prop_*
   selection               String
   line                    Float?
-  oddsAtCreation          Float
+  oddsAtCreation          Float?
   marketOutcomeId         String?
   oddsSnapshotId          String?
   bookmakerKey            String?
@@ -748,6 +754,7 @@ model Prediction {
   @@index([status])
   @@index([publishedAt])
   @@index([marketType])
+  @@index([source])
   @@index([oddsSnapshotId])
   @@index([status, rewardsProcessedAt, achievementsProcessedAt, notificationProcessedAt])
 }

@@ -1,4 +1,5 @@
 import type { PredictionMarket } from "@sbgg/db";
+import { COMMUNITY_STAT_CATALOG } from "@sbgg/core";
 
 export const MAX_ODDS_AGE_MS = 12 * 60 * 60 * 1_000;
 export const MAX_FUTURE_ODDS_SKEW_MS = 5 * 60 * 1_000;
@@ -22,20 +23,46 @@ export interface PredictionOptionOutcome {
   price: number;
   point: number | null;
   capturedAt: string;
+  isBestOdds: boolean;
 }
+
+export type PredictionMarketGroupKey = "MONEYLINE" | "SPREAD" | "TOTAL" | "PLAYER_PROP";
 
 export interface PredictionOptionMarket {
   id: string;
   key: string;
   name: string;
   bookmaker: string;
+  bookmakerKey: string;
+  group: PredictionMarketGroupKey;
   outcomes: PredictionOptionOutcome[];
+}
+
+export interface PredictionOptionGroup {
+  key: PredictionMarketGroupKey;
+  label: string;
+  markets: PredictionOptionMarket[];
+}
+
+export interface CommunityPlayerOption {
+  id: string;
+  name: string;
+  position: string | null;
+  teamId: string | null;
+  teamAbbreviation: string;
 }
 
 export interface PredictionOptionsResult {
   availability: PredictionAvailability;
   reason: string;
   markets: PredictionOptionMarket[];
+  groups: PredictionOptionGroup[];
+  bookmakers: Array<{ key: string; name: string }>;
+  community: {
+    available: boolean;
+    players: CommunityPlayerOption[];
+    stats: Array<{ key: string; label: string; max: number }>;
+  };
   refreshedAt: string;
 }
 
@@ -66,7 +93,7 @@ interface OptionGame {
     key: string;
     name: string;
     active: boolean;
-    bookmaker: { id: string; name: string; active: boolean } | null;
+    bookmaker: { id: string; key: string; name: string; active: boolean } | null;
     outcomes: Array<{
       id: string;
       providerOutcomeKey: string | null;
@@ -74,6 +101,50 @@ interface OptionGame {
       description: string | null;
     }>;
   }>;
+}
+
+function emptyResult(
+  availability: PredictionAvailability,
+  reason: string,
+  now: Date,
+  communityPlayers: CommunityPlayerOption[] = [],
+): PredictionOptionsResult {
+  return {
+    availability,
+    reason,
+    markets: [],
+    groups: [],
+    bookmakers: [],
+    community: {
+      available: availability !== "CLOSED" && communityPlayers.length > 0,
+      players: communityPlayers,
+      stats: COMMUNITY_STAT_CATALOG.map(({ key, label, max }) => ({ key, label, max })),
+    },
+    refreshedAt: now.toISOString(),
+  };
+}
+
+export function marketGroupForKey(key: string): PredictionMarketGroupKey | null {
+  if (key === "h2h") return "MONEYLINE";
+  if (key === "spreads") return "SPREAD";
+  if (key === "totals") return "TOTAL";
+  if ((SUPPORTED_PROP_MARKETS as readonly string[]).includes(key)) return "PLAYER_PROP";
+  return null;
+}
+
+const GROUP_LABELS: Record<PredictionMarketGroupKey, string> = {
+  MONEYLINE: "Moneyline",
+  SPREAD: "Spread",
+  TOTAL: "Total",
+  PLAYER_PROP: "Player Props",
+};
+
+export function groupPredictionMarkets(markets: PredictionOptionMarket[]): PredictionOptionGroup[] {
+  const order: PredictionMarketGroupKey[] = ["MONEYLINE", "SPREAD", "TOTAL", "PLAYER_PROP"];
+  return order.flatMap((key) => {
+    const grouped = markets.filter((market) => market.group === key);
+    return grouped.length ? [{ key, label: GROUP_LABELS[key], markets: grouped }] : [];
+  });
 }
 
 interface OptionSnapshot {
@@ -126,9 +197,14 @@ export function isFreshOdds(capturedAt: Date, now = new Date()): boolean {
 }
 
 /** Build a public-safe option set exclusively from immutable provider snapshots. */
-export function buildPredictionOptions(game: OptionGame, snapshots: OptionSnapshot[], now = new Date()): PredictionOptionsResult {
+export function buildPredictionOptions(
+  game: OptionGame,
+  snapshots: OptionSnapshot[],
+  now = new Date(),
+  communityPlayers: CommunityPlayerOption[] = [],
+): PredictionOptionsResult {
   if (game.status !== "SCHEDULED" || game.scheduledAt <= now) {
-    return { availability: "CLOSED", reason: "This game has started and picks are closed.", markets: [], refreshedAt: now.toISOString() };
+    return emptyResult("CLOSED", "This game has started and picks are closed.", now, communityPlayers);
   }
 
   let hasSupportedProviderOutcome = false;
@@ -137,6 +213,8 @@ export function buildPredictionOptions(game: OptionGame, snapshots: OptionSnapsh
 
   for (const market of game.markets) {
     if (!market.active || !market.bookmaker?.active) continue;
+    const group = marketGroupForKey(market.key);
+    if (!group) continue;
     const outcomes: PredictionOptionOutcome[] = [];
     for (const outcome of market.outcomes) {
       if (!outcome.providerOutcomeKey || !selectionForOutcome(market.key, outcome.name, game.homeTeam, game.awayTeam)) continue;
@@ -159,23 +237,58 @@ export function buildPredictionOptions(game: OptionGame, snapshots: OptionSnapsh
         price: snapshot.price,
         point: snapshot.line,
         capturedAt: snapshot.capturedAt.toISOString(),
+        isBestOdds: false,
       });
     }
-    if (outcomes.length) markets.push({ id: market.id, key: market.key, name: market.name, bookmaker: market.bookmaker.name, outcomes });
+    if (outcomes.length) markets.push({
+      id: market.id,
+      key: market.key,
+      name: market.name,
+      bookmaker: market.bookmaker.name,
+      bookmakerKey: market.bookmaker.key,
+      group,
+      outcomes,
+    });
   }
 
   if (markets.length) {
     const priority = (key: string) => key === "h2h" ? 0 : key === "spreads" ? 1 : key === "totals" ? 2 : 3;
     markets.sort((left, right) => priority(left.key) - priority(right.key));
-    return { availability: "AVAILABLE", reason: "Provider-verified picks are open.", markets, refreshedAt: now.toISOString() };
+    for (const market of markets) {
+      for (const outcome of market.outcomes) {
+        const comparable = markets.flatMap((candidate) => candidate.outcomes.map((item) => ({ candidate, item }))).filter(({ candidate, item }) =>
+          candidate.key === market.key
+          && normalizeOutcome(item.name) === normalizeOutcome(outcome.name)
+          && item.point === outcome.point,
+        );
+        outcome.isBestOdds = comparable.every(({ item }) => outcome.price >= item.price);
+      }
+    }
+    const bookmakers = Array.from(new Map(markets.map((market) => [market.bookmakerKey, { key: market.bookmakerKey, name: market.bookmaker }])).values());
+    return {
+      availability: "AVAILABLE",
+      reason: "Provider-verified picks are open.",
+      markets,
+      groups: groupPredictionMarkets(markets),
+      bookmakers,
+      community: {
+        available: communityPlayers.length > 0,
+        players: communityPlayers,
+        stats: COMMUNITY_STAT_CATALOG.map(({ key, label, max }) => ({ key, label, max })),
+      },
+      refreshedAt: now.toISOString(),
+    };
+  }
+  if (communityPlayers.length) {
+    return emptyResult("AVAILABLE", "Community lines are open; sportsbook odds are not required.", now, communityPlayers);
   }
   if (hasStaleSnapshot) {
-    return { availability: "STALE", reason: "Odds are being refreshed. Try again shortly.", markets: [], refreshedAt: now.toISOString() };
+    return emptyResult("STALE", "Odds are being refreshed. Try again shortly.", now, communityPlayers);
   }
-  return {
-    availability: "UNAVAILABLE",
-    reason: hasSupportedProviderOutcome ? "Verified odds are not available yet." : "Prediction markets are not available yet.",
-    markets: [],
-    refreshedAt: now.toISOString(),
-  };
+  return emptyResult(
+    "UNAVAILABLE",
+    hasSupportedProviderOutcome ? "Verified odds are not available yet." : "Prediction markets are not available yet.",
+    now,
+    communityPlayers,
+  );
 }

@@ -1,20 +1,11 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { Prisma, prisma } from "@sbgg/db";
 import { checkAchievements, grantXpAndCoins, recordDailyActivity } from "@sbgg/gamification";
 import { xpDefaults } from "@sbgg/core";
 import { getSession } from "@/lib/session";
 import { isFreshOdds, normalizeOutcome, selectionForOutcome } from "@/lib/prediction-options";
+import { predictionPublishSchema } from "@/lib/prediction-payload";
 import { publicationDecision } from "@/lib/prediction-publication";
-
-const publishSchema = z.object({
-  clientRequestId: z.string().uuid(),
-  gameId: z.string().min(1).max(64),
-  marketOutcomeId: z.string().min(1).max(64),
-  confidence: z.enum(["LOW", "MEDIUM", "HIGH"]),
-  analysis: z.string().trim().max(2_000).nullable().optional(),
-  virtualUnits: z.coerce.number().min(0.5).max(10),
-}).strict();
 
 function apiError(error: string, code: string, status: number, details?: unknown) {
   return NextResponse.json({ error, code, ...(details ? { details } : {}) }, { status });
@@ -38,7 +29,7 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session?.user) return apiError("Sign in to publish this pick.", "AUTH_REQUIRED", 401);
 
-  const parsed = publishSchema.safeParse(await request.json().catch(() => null));
+  const parsed = predictionPublishSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return apiError("Check the prediction details and try again.", "INVALID_PREDICTION", 400, parsed.error.flatten().fieldErrors);
   }
@@ -49,6 +40,54 @@ export async function POST(request: Request) {
     if (publicationDecision(prior.userId, session.user.id) === "CONFLICT") return apiError("This publish request cannot be reused.", "REQUEST_CONFLICT", 409);
     await rewardPublication(session.user.id, prior.id);
     return NextResponse.json({ ok: true, id: prior.id, duplicate: true });
+  }
+
+  if (input.source === "COMMUNITY") {
+    const game = await prisma.game.findUnique({ where: { id: input.gameId } });
+    if (!game) return apiError("Game not found.", "GAME_NOT_FOUND", 404);
+    const now = new Date();
+    if (game.status !== "SCHEDULED" || game.scheduledAt <= now) {
+      return apiError("This game has started and picks are closed.", "GAME_STARTED", 409);
+    }
+    const player = await prisma.player.findUnique({ where: { id: input.playerId }, select: { id: true, teamId: true } });
+    if (!player || !player.teamId || ![game.homeTeamId, game.awayTeamId].includes(player.teamId)) {
+      return apiError("Choose a verified player from one of these teams.", "PLAYER_UNVERIFIED", 409);
+    }
+    const mapping = await prisma.providerEntityMapping.findFirst({
+      where: { entityType: "PLAYER", entityId: player.id },
+      select: { id: true },
+    });
+    if (!mapping) return apiError("Choose a verified player from one of these teams.", "PLAYER_UNVERIFIED", 409);
+
+    let prediction;
+    try {
+      prediction = await prisma.prediction.create({
+        data: {
+          clientRequestId: input.clientRequestId,
+          userId: session.user.id,
+          gameId: game.id,
+          playerId: player.id,
+          source: "COMMUNITY",
+          marketType: "PLAYER_PROP",
+          marketKey: input.statKey,
+          selection: input.selection,
+          line: input.line,
+          oddsAtCreation: null,
+          confidence: input.confidence,
+          analysis: input.analysis || null,
+          virtualUnits: input.virtualUnits,
+          status: "PENDING",
+          publishedAt: now,
+        },
+      });
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") throw error;
+      const concurrent = await prisma.prediction.findUnique({ where: { clientRequestId: input.clientRequestId } });
+      if (!concurrent || concurrent.userId !== session.user.id) throw error;
+      prediction = concurrent;
+    }
+    await rewardPublication(session.user.id, prediction.id);
+    return NextResponse.json({ ok: true, id: prediction.id }, { status: 201 });
   }
 
   const outcome = await prisma.marketOutcome.findUnique({
@@ -116,6 +155,7 @@ export async function POST(request: Request) {
         userId: session.user.id,
         gameId: game.id,
         playerId,
+        source: "PROVIDER",
         marketType: marketSelection.marketType,
         marketKey: marketSelection.marketKey,
         selection: marketSelection.selection,

@@ -8,19 +8,33 @@ export function SettingsEditor({ settings }: { settings: { key: string; value: s
   const router = useRouter();
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(settings.map((s) => [s.key, s.value])));
   const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function save() {
+    if (busy) return;
+    setBusy(true); setMsg(null); setError(null);
     let saved = 0;
+    const failures: string[] = [];
     for (const s of settings) {
-      const res = await fetch("/api/admin/action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "setting.set", key: s.key, value: values[s.key] ?? "", group: s.group }),
-      });
-      if (res.ok) saved++;
+      try {
+        const res = await fetch("/api/admin/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "setting.set", requestId: crypto.randomUUID(), key: s.key, value: values[s.key] ?? "", group: s.group }),
+        });
+        if (res.ok) saved++;
+        else {
+          const body = await res.json().catch(() => ({})) as { error?: string };
+          failures.push(`${s.key}: ${body.error ?? `HTTP ${res.status}`}`);
+        }
+      } catch {
+        failures.push(`${s.key}: network error`);
+      }
     }
-    setMsg(`Saved ${saved}/${settings.length} settings`);
-    router.refresh();
+    if (failures.length) setError(`Saved ${saved}/${settings.length}. Failed: ${failures.join("; ")}`);
+    else { setMsg(`Saved all ${saved} settings`); router.refresh(); }
+    setBusy(false);
   }
 
   if (settings.length === 0) return <Card><p className="text-sm text-brand-muted">No gamification settings yet.</p></Card>;
@@ -34,8 +48,9 @@ export function SettingsEditor({ settings }: { settings: { key: string; value: s
         </div>
       ))}
       <div className="flex items-center gap-3">
-        <button className="btn-primary" onClick={save}>Save all</button>
+        <button className="btn-primary" onClick={() => void save()} disabled={busy}>{busy ? "Saving…" : "Save all"}</button>
         {msg ? <span className="text-sm text-brand-success">{msg}</span> : null}
+        {error ? <span className="text-sm text-brand-danger" role="alert">{error}</span> : null}
       </div>
     </div>
   );

@@ -28,7 +28,7 @@ export default async function NflPredictionsPage() {
               <article key={p.id} className="card card-hover">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium text-brand-text">@{p.user.profile?.username ?? "predictor"}</span>
-                  <span className="scoreboard-num text-brand-primary">{p.oddsAtCreation}</span>
+                  <span className="text-xs font-semibold text-brand-primary">{p.oddsAtCreation == null ? "Community line" : p.oddsAtCreation}</span>
                 </div>
                 <Link href={`/games/${p.gameId}`} className="mt-1 block text-sm text-brand-muted hover:text-brand-primary">
                   {p.game.awayTeam.abbreviation} @ {p.game.homeTeam.abbreviation} · {gameWeekLabel(p.game.seasonType, p.game.week)}

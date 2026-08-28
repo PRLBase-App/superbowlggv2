@@ -37,7 +37,7 @@ export default async function WeekPredictionsPage({ params }: { params: Promise<
                   <Badge tone={p.status === "SETTLED" ? (p.result === "WIN" ? "green" : p.result === "LOSS" ? "red" : "slate") : "blue"}>{p.status === "SETTLED" ? p.result : p.status}</Badge>
                 </div>
                 <p className="mt-2 text-sm font-semibold text-brand-text">
-                  {p.selection === "home" ? p.game.homeTeam.abbreviation : p.selection === "away" ? p.game.awayTeam.abbreviation : p.selection}{p.line != null ? ` (${p.line})` : ""} · {p.oddsAtCreation}
+                  {p.selection === "home" ? p.game.homeTeam.abbreviation : p.selection === "away" ? p.game.awayTeam.abbreviation : p.selection}{p.line != null ? ` (${p.line})` : ""} · {p.oddsAtCreation ?? "Community line"}
                 </p>
               </Link>
             ))}

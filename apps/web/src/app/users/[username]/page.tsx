@@ -33,7 +33,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
   const losses = settled.length - wins;
   const accuracy = settled.length ? wins / settled.length : 0;
   const points = settled.reduce((acc, p) => acc + predictionPoints({ result: p.result!, odds: p.oddsAtCreation }), 0);
-  const units = settled.reduce((acc, p) => acc + (p.result === "WIN" ? p.oddsAtCreation - 1 : -1), 0);
+  const units = settled.reduce((acc, p) => acc + (p.oddsAtCreation == null ? 0 : p.result === "WIN" ? p.oddsAtCreation - 1 : -1), 0);
   const level = u.xp ? levelForXp(u.xp.totalXp) : levelForXp(0);
 
   const isSelf = me?.id === u.id;
@@ -69,7 +69,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
               </div>
             </div>
           </div>
-          {me ? <FollowButton username={username} initialFollowing={!!existingFollow} isSelf={isSelf} /> : <Link href="/auth/sign-in" className="btn-secondary">Log in to follow</Link>}
+          {me ? <FollowButton username={username} initialFollowing={!!existingFollow} isSelf={isSelf} /> : <Link href={`/auth/sign-in?next=${encodeURIComponent(`/users/${encodeURIComponent(username)}`)}`} className="btn-secondary">Log in to follow</Link>}
         </div>
 
         {/* stat strip */}
@@ -104,9 +104,9 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
                   </Badge>
                 </div>
                 <p className="mt-2 text-sm font-semibold text-brand-text">
-                  {p.marketType === "MONEYLINE" ? "ML" : p.marketType === "SPREAD" ? "SPR" : "TOT"}: {p.selection === "home" ? p.game.homeTeam.abbreviation : p.selection === "away" ? p.game.awayTeam.abbreviation : p.selection}{p.line != null ? ` (${p.line})` : ""}
+                  {p.marketType === "MONEYLINE" ? "ML" : p.marketType === "SPREAD" ? "SPR" : p.marketType === "TOTAL" ? "TOT" : "PROP"}: {p.selection === "home" ? p.game.homeTeam.abbreviation : p.selection === "away" ? p.game.awayTeam.abbreviation : p.selection}{p.line != null ? ` (${p.line})` : ""}
                 </p>
-                <p className="mt-1 text-xs text-brand-muted">Odds {p.oddsAtCreation} · {timeAgo(p.publishedAt)}</p>
+                <p className="mt-1 text-xs text-brand-muted">{p.oddsAtCreation == null ? "Community line · no sportsbook odds" : `Odds ${p.oddsAtCreation}`} · {timeAgo(p.publishedAt)}</p>
               </Link>
             ))}
           </div>

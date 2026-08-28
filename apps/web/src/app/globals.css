@@ -99,6 +99,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 body {
@@ -109,6 +110,7 @@ body {
   background-image:
     radial-gradient(circle at 15% -10%, rgba(62, 125, 213, 0.12), transparent 28rem),
     radial-gradient(circle at 92% 8%, rgba(32, 139, 142, 0.08), transparent 24rem);
+  overflow-x: clip;
 }
 
 /* ── Scoreboard typography / football geometry accents ─────────── */

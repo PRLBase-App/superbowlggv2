@@ -12,7 +12,7 @@ export default function HowItWorksPage() {
           ["2. Publish your prediction", "Choose a market and an outcome, set your confidence, add analysis and publish. Your pick locks at kickoff."],
           ["3. Build your record", "Every pick settles automatically when the game ends — WIN, LOSS, PUSH or VOID. Your record is permanent and public."],
           ["4. Earn XP & coins", "Publishing picks, correct predictions, daily streaks and achievements all earn XP and virtual coins."],
-          ["5. Redeem in the Marketplace", "Spend coins on partner offers, promo codes and merchandise. Coins are virtual — they have no cash value."],
+          ["5. Redeem in the Rewards Store", "Spend coins on admin- or verified-partner rewards. Coins are virtual — they have no cash value, and users cannot sell offers."],
           ["6. Follow the best", "Follow top predictors, get notified when they publish, and compare records on the leaderboard."],
         ].map(([title, body]) => (
           <div key={title} className="card">

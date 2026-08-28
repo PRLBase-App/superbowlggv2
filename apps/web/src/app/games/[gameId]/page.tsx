@@ -89,7 +89,7 @@ export default async function GameCenterPage({ params }: { params: Promise<{ gam
             <p className="text-sm text-brand-muted">{gameWeekTitle(game.seasonType, game.week)} · {kickoffDisplay(game.scheduledAt)}</p>
             <p className="text-xs text-brand-muted">{game.venue || game.homeTeam.stadium}{game.broadcast ? ` · ${game.broadcast}` : ""}</p>
             <LiveGamePoller gameId={game.id} />
-            {markets.length ? <Link href="#make-pick" className="btn-primary min-h-11">Make a pick</Link> : null}
+            {predictionOptions && (predictionOptions.groups.length || predictionOptions.community.available) ? <Link href="#make-pick" className="btn-primary min-h-11">Make a pick</Link> : null}
           </div>
         </div>
 
@@ -145,7 +145,7 @@ export default async function GameCenterPage({ params }: { params: Promise<{ gam
                           {p.status === "SETTLED" ? p.result : "Pending"}
                         </Badge>
                       </div>
-                      <span className="scoreboard-num text-sm text-brand-primary">{p.oddsAtCreation}</span>
+                      <span className="text-xs font-semibold text-brand-primary">{p.oddsAtCreation == null ? "Community line" : p.oddsAtCreation}</span>
                     </div>
                     <p className="mt-2 text-sm text-brand-text">
                       {p.marketType === "MONEYLINE" ? "Moneyline" : p.marketType === "SPREAD" ? "Spread" : p.marketType === "TOTAL" ? "Total" : "Player prop"}:{" "}
@@ -229,8 +229,8 @@ export default async function GameCenterPage({ params }: { params: Promise<{ gam
         <aside className="order-first space-y-6 lg:order-last" id="make-pick">
           <section>
             <SectionTitle sub={user ? "Provider-checked again when you publish" : "Choose now, then join or sign in without losing this pick"}>Make a prediction</SectionTitle>
-            {markets.length ? (
-              <PredictionBuilder authenticated={Boolean(user)} game={{ id: game.id, homeAbbr: game.homeTeam.abbreviation, awayAbbr: game.awayTeam.abbreviation }} markets={markets} />
+            {predictionOptions && (predictionOptions.groups.length || predictionOptions.community.available) ? (
+              <PredictionBuilder authenticated={Boolean(user)} game={{ id: game.id, homeAbbr: game.homeTeam.abbreviation, awayAbbr: game.awayTeam.abbreviation }} options={predictionOptions} />
             ) : (
               <Card>
                 <p className="font-display text-lg text-brand-text">{predictionOptions?.availability === "STALE" ? "Odds are refreshing" : game.status === "SCHEDULED" ? "Picks are not open yet" : "Picks are closed"}</p>

@@ -18,7 +18,7 @@ export default async function AdminDashboardPage() {
     { label: "Affiliate Clicks", value: stats.clicks, href: "/admin/affiliate" },
     { label: "Conversions", value: stats.conversions, href: "/admin/affiliate" },
     { label: "Ad Impressions", value: stats.impressions, href: "/admin/ads" },
-    { label: "Marketplace Redemptions", value: stats.redemptions, href: "/admin/marketplace" },
+    { label: "Rewards Store Redemptions", value: stats.redemptions, href: "/admin/marketplace" },
     { label: "SEO Organic Keywords", value: stats.seoKeywords, href: "/admin/seo" },
   ];
 

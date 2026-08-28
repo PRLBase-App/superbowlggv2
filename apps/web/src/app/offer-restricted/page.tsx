@@ -13,7 +13,7 @@ export default async function OfferRestrictedPage({ searchParams }: { searchPara
       </p>
       <p className="mt-1 text-sm text-brand-muted">Community predictions are always available regardless of location.</p>
       <div className="mt-6 flex justify-center gap-2">
-        <Link href="/marketplace" className="btn-secondary">Back to marketplace</Link>
+        <Link href="/marketplace" className="btn-secondary">Back to Rewards Store</Link>
         <Link href="/games" className="btn-primary">Predict games</Link>
       </div>
     </div>

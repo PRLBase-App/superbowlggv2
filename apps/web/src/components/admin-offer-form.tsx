@@ -14,31 +14,21 @@ export function AdminOfferForm({ categories }: { categories: { id: string; name:
   const [destinationUrl, setDestinationUrl] = useState("");
   const [inventory, setInventory] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
-    const res = await fetch("/api/admin/marketplace", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-        description,
-        coinPrice: Number(coinPrice),
-        categoryId,
-        promoCode: promoCode || undefined,
-        destinationUrl: destinationUrl || undefined,
-        inventory: inventory ? Number(inventory) : undefined,
-      }),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (res.ok) {
-      setMsg("Offer created");
-      setTitle(""); setSlug(""); setDescription(""); setPromoCode(""); setDestinationUrl(""); setInventory("");
-      router.refresh();
-    } else {
-      setMsg(body.error ?? "Create failed");
-    }
+    if (busy) return;
+    setBusy(true); setMsg(null); setError(null);
+    try {
+      const res = await fetch("/api/admin/marketplace", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""), description, coinPrice: Number(coinPrice), categoryId, promoCode: promoCode || undefined, destinationUrl: destinationUrl || undefined, inventory: inventory ? Number(inventory) : undefined }) });
+      const body = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? "Create failed");
+      setMsg("Offer created"); setTitle(""); setSlug(""); setDescription(""); setPromoCode(""); setDestinationUrl(""); setInventory(""); router.refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The network did not respond.");
+    } finally { setBusy(false); }
   }
 
   return (
@@ -78,8 +68,9 @@ export function AdminOfferForm({ categories }: { categories: { id: string; name:
         <input className="input" type="number" min={1} value={inventory} onChange={(e) => setInventory(e.target.value)} />
       </div>
       <div className="sm:col-span-2 flex items-center gap-3">
-        <button className="btn-primary" type="submit">Create offer</button>
+        <button className="btn-primary" type="submit" disabled={busy}>{busy ? "Creating…" : "Create offer"}</button>
         {msg ? <span className="text-sm text-brand-muted">{msg}</span> : null}
+        {error ? <span className="text-sm text-brand-danger" role="alert">{error}</span> : null}
       </div>
     </form>
   );

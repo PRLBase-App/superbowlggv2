@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -7,40 +8,29 @@ export function FollowButton({ username, initialFollowing, isSelf }: { username:
   const router = useRouter();
   const [following, setFollowing] = useState(initialFollowing);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (isSelf) {
-    return (
-      <button
-        className="btn-secondary"
-        onClick={async () => {
-          const res = await fetch("/api/settings/profile", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
-          if (res.ok) router.refresh();
-        }}
-      >
-        Edit profile
-      </button>
-    );
+    return <Link href="/settings" className="btn-secondary">Edit profile</Link>;
   }
 
   return (
-    <button
-      className={following ? "btn-secondary" : "btn-primary"}
-      disabled={busy}
-      onClick={async () => {
-        setBusy(true);
-        const res = await fetch("/api/follow", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, follow: !following }),
-        });
-        if (res.ok) {
-          setFollowing(!following);
-          router.refresh();
-        }
-        setBusy(false);
-      }}
-    >
-      {following ? "Following" : "+ Follow"}
-    </button>
+    <div><button
+        className={following ? "btn-secondary" : "btn-primary"}
+        disabled={busy}
+        onClick={async () => {
+          if (busy) return;
+          setBusy(true); setError(null);
+          try {
+            const res = await fetch("/api/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, follow: !following }) });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(body.error ?? "Follow action failed");
+            setFollowing(Boolean(body.following));
+            router.refresh();
+          } catch (cause) {
+            setError(cause instanceof Error ? cause.message : "The network did not respond.");
+          } finally { setBusy(false); }
+        }}
+      >{busy ? "Saving…" : following ? "Following" : "+ Follow"}</button>{error ? <p className="mt-2 text-xs text-brand-danger" role="alert">{error}</p> : null}</div>
   );
 }

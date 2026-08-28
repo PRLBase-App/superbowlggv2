@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { requireSession } from "@/lib/session";
 import { getNotifications } from "@/lib/data";
-import { Card, SectionTitle, EmptyState } from "@/components/ui";
+import { SectionTitle, EmptyState } from "@/components/ui";
 import { MarkAllReadButton } from "@/components/mark-all-read";
-import { timeAgo } from "@sbgg/core";
+import { NotificationItem } from "@/components/notification-item";
 
 export const metadata: Metadata = { title: "Notifications", description: "Your Superbowl.gg notifications." };
 
@@ -25,16 +25,7 @@ export default async function NotificationsPage() {
       ) : (
         <div className="space-y-2">
           {notifications.map((n) => (
-            <Card key={n.id} className={`${n.read ? "opacity-60" : ""}`}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-brand-text">{n.title}</p>
-                  {n.body ? <p className="mt-0.5 text-sm text-brand-muted">{n.body}</p> : null}
-                  <p className="mt-1 text-xs text-brand-muted">{timeAgo(n.createdAt)}</p>
-                </div>
-                {!n.read ? <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-primary" aria-label="Unread" /> : null}
-              </div>
-            </Card>
+            <NotificationItem key={n.id} notification={{ ...n, createdAt: n.createdAt.toISOString() }} />
           ))}
         </div>
       )}

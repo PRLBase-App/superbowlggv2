@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@sbgg/db";
 import { Badge } from "@/components/ui";
+import { SettingsEditor } from "@/components/settings-editor";
 
 export const metadata: Metadata = { title: "Admin · Settings" };
 
@@ -16,20 +17,7 @@ export default async function AdminSettingsPage() {
       <h1 className="font-display text-2xl font-bold text-brand-text">Settings</h1>
       <section>
         <h2 className="font-display mb-3 text-lg font-semibold">App settings</h2>
-        <div className="overflow-x-auto rounded-xl border border-brand-border">
-          <table className="w-full text-sm">
-            <thead className="bg-brand-surface"><tr><th className="table-head px-4 py-2.5">Key</th><th className="table-head px-4 py-2.5">Value</th><th className="table-head px-4 py-2.5">Group</th></tr></thead>
-            <tbody className="divide-y divide-brand-border">
-              {settings.map((s) => (
-                <tr key={s.id} className="hover:bg-brand-surface">
-                  <td className="px-4 py-2.5 font-mono text-xs text-brand-text">{s.key}</td>
-                  <td className="px-4 py-2.5 text-brand-muted">{s.value}</td>
-                  <td className="px-4 py-2.5"><Badge tone="slate">{s.group}</Badge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <SettingsEditor settings={settings.map(({ key, value, group }) => ({ key, value, group }))} />
       </section>
       <section>
         <h2 className="font-display mb-3 text-lg font-semibold">Feature flags</h2>

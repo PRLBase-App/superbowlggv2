@@ -17,22 +17,17 @@ export const revalidate = 30;
 export default async function MarketplaceOfferPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const now = new Date();
-  const [offer, user] = await Promise.all([
-    prisma.marketplaceOffer.findFirst({
-      where: {
-        slug,
-        status: "ACTIVE",
-        AND: [
-          { OR: [{ startAt: null }, { startAt: { lte: now } }] },
-          { OR: [{ endAt: null }, { endAt: { gte: now } }] },
-          { OR: [{ inventory: null }, { inventory: { gt: 0 } }] },
-        ],
-      },
-      include: { category: true },
-    }),
-    getSessionUser(),
-  ]);
-  if (!offer) notFound();
+  const user = await getSessionUser();
+  const offer = await prisma.marketplaceOffer.findUnique({
+    where: { slug },
+    include: { category: true, redemptions: { where: { userId: user?.id ?? "" }, take: 1 } },
+  });
+  const prior = offer?.redemptions[0];
+  const available = offer?.status === "ACTIVE"
+    && (!offer.startAt || offer.startAt <= now)
+    && (!offer.endAt || offer.endAt >= now)
+    && (offer.inventory == null || offer.inventory > 0);
+  if (!offer || (!available && !prior)) notFound();
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -55,10 +50,10 @@ export default async function MarketplaceOfferPage({ params }: { params: Promise
           </div>
         </div>
         <div className="mt-6 border-t border-brand-border pt-4">
-          <RedeemButton slug={offer.slug} coinPrice={offer.coinPrice} enoughCoins={(user?.coins ?? 0) >= offer.coinPrice} loggedIn={!!user} />
+          <RedeemButton slug={offer.slug} coinPrice={offer.coinPrice} enoughCoins={(user?.coins ?? 0) >= offer.coinPrice} loggedIn={!!user} existingReward={prior ? { promoCode: prior.promoCode ?? undefined, destinationUrl: offer.destinationUrl ?? undefined } : undefined} />
         </div>
         <p className="mt-4 text-xs text-brand-muted">
-          Coins are virtual and have no cash value. Redemptions are fulfilled by partners; promo codes are shared as-is.
+          Coins are virtual and have no cash value. Only Superbowl.gg and verified partners list rewards; users cannot sell offers. Redemptions are fulfilled by partners; promo codes are shared as-is.
         </p>
       </Card>
     </div>

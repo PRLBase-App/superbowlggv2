@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ComponentType } from "react";
-import { Bell, CalendarDays, Coins, Home, Newspaper, Search, ShieldCheck, UserRound, WandSparkles } from "lucide-react";
+import { Bell, CalendarDays, Coins, Home, Menu, Newspaper, Search, ShieldCheck, UserRound, WandSparkles, X } from "lucide-react";
 import type { SessionUserView } from "@/lib/session";
 
 const NAV = [
@@ -15,7 +15,7 @@ const NAV = [
   { href: "/blog", label: "Analysis" },
   { href: "/nfl/stats", label: "Stats" },
   { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/marketplace", label: "Marketplace" },
+  { href: "/marketplace", label: "Rewards Store" },
   { href: "/super-bowl", label: "Super Bowl LXI" },
 ];
 
@@ -31,12 +31,24 @@ export function SiteHeader({ user }: { user: SessionUserView | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [compactOpen, setCompactOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   async function signOut() {
-    await fetch("/api/auth/sign-out", { method: "POST" });
-    router.refresh();
-    router.push("/");
+    if (signingOut) return;
+    setSigningOut(true);
+    setActionError(null);
+    try {
+      const response = await fetch("/api/auth/sign-out", { method: "POST" });
+      if (!response.ok) throw new Error("Sign out failed");
+      router.push("/");
+      router.refresh();
+    } catch {
+      setActionError("Could not sign out. Check your connection and try again.");
+      setSigningOut(false);
+    }
   }
 
   return (
@@ -48,7 +60,7 @@ export function SiteHeader({ user }: { user: SessionUserView | null }) {
         </div>
       </div>
       <div className="border-b border-white/10 bg-brand-nav text-white">
-        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6">
+        <div className="relative mx-auto flex h-16 max-w-[1680px] items-center justify-between gap-2 px-3 sm:px-5">
           <Link href="/" className="group flex shrink-0 items-center gap-1.5 sm:gap-2" aria-label="Superbowl.gg home">
             <span className="logo-tile flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl p-0.5 shadow-[0_0_20px_rgba(62,125,213,0.34)] transition-transform duration-200 group-hover:scale-[1.04] sm:h-11 sm:w-11">
               <Image src="/logo.svg" alt="" width={44} height={44} priority className="h-full w-full object-contain" />
@@ -58,15 +70,16 @@ export function SiteHeader({ user }: { user: SessionUserView | null }) {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Primary navigation">
+          <nav className="hidden min-w-0 items-center gap-0 whitespace-nowrap min-[1280px]:flex" aria-label="Primary navigation">
             {NAV.map((item) => (
-              <Link key={item.href} href={item.href} className={`rounded-lg px-3 py-2 text-sm font-medium transition ${isActive(item.href) ? "bg-white/12 text-white" : "text-white/65 hover:bg-white/7 hover:text-white"}`}>
+              <Link key={item.href} href={item.href} className={`rounded-lg px-2 py-2 text-xs font-medium transition min-[1450px]:px-3 min-[1450px]:text-sm ${isActive(item.href) ? "bg-white/12 text-white" : "text-white/65 hover:bg-white/7 hover:text-white"}`}>
                 {item.label}
               </Link>
             ))}
           </nav>
 
           <div className="flex items-center gap-2">
+            <button type="button" className="hidden h-11 w-11 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 md:flex min-[1280px]:hidden" onClick={() => setCompactOpen((open) => !open)} aria-expanded={compactOpen} aria-controls="compact-primary-navigation" aria-label="Toggle navigation">{compactOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
             <Link href="/search" className="flex h-11 w-11 items-center justify-center rounded-lg text-white/65 transition hover:bg-white/10 hover:text-white" aria-label="Search teams, players and games"><Search className="h-5 w-5" /></Link>
             {user ? (
               <>
@@ -77,7 +90,7 @@ export function SiteHeader({ user }: { user: SessionUserView | null }) {
                 <div className="relative">
                   <button onClick={() => setMenuOpen((open) => !open)} className="flex min-h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/8 px-2.5 text-sm font-medium text-white transition hover:bg-white/12" aria-expanded={menuOpen} aria-label="Account menu">
                     <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-primary text-xs font-bold text-brand-on-primary">{(user.name ?? user.email)[0]?.toUpperCase()}</span>
-                    <span className="hidden max-w-28 truncate lg:block">{user.name ?? user.username ?? user.email}</span>
+                    <span className="hidden max-w-20 truncate lg:block min-[1450px]:max-w-28">{user.name ?? user.username ?? user.email}</span>
                   </button>
                   {menuOpen ? (
                     <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-brand-border bg-brand-surface p-1.5 text-brand-text shadow-2xl">
@@ -87,7 +100,8 @@ export function SiteHeader({ user }: { user: SessionUserView | null }) {
                       <Link href="/achievements" className="block rounded-xl px-3 py-2 text-sm hover:bg-brand-surface2" onClick={() => setMenuOpen(false)}>Achievements</Link>
                       <Link href="/settings" className="block rounded-xl px-3 py-2 text-sm hover:bg-brand-surface2" onClick={() => setMenuOpen(false)}>Account settings</Link>
                       {user.isAdmin ? <Link href="/admin" className="block rounded-xl px-3 py-2 text-sm text-brand-secondary hover:bg-brand-surface2" onClick={() => setMenuOpen(false)}>Admin dashboard</Link> : null}
-                      <button onClick={signOut} className="mt-1 block min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm text-brand-danger hover:bg-brand-danger/10">Sign out</button>
+                      <button onClick={() => void signOut()} disabled={signingOut} className="mt-1 block min-h-11 w-full rounded-xl px-3 py-2 text-left text-sm text-brand-danger hover:bg-brand-danger/10 disabled:opacity-60">{signingOut ? "Signing out…" : "Sign out"}</button>
+                      {actionError ? <p className="px-3 py-2 text-xs text-brand-danger" role="alert">{actionError}</p> : null}
                     </div>
                   ) : null}
                 </div>
@@ -99,6 +113,11 @@ export function SiteHeader({ user }: { user: SessionUserView | null }) {
               </>
             )}
           </div>
+          {compactOpen ? (
+            <nav id="compact-primary-navigation" className="absolute inset-x-3 top-[calc(100%+1px)] hidden grid-cols-2 gap-1 rounded-b-2xl border border-brand-border bg-brand-surface p-3 text-brand-text shadow-2xl md:grid min-[1280px]:hidden" aria-label="Compact primary navigation">
+              {NAV.map((item) => <Link key={item.href} href={item.href} onClick={() => setCompactOpen(false)} className={`min-h-11 rounded-xl px-3 py-3 text-sm font-medium ${isActive(item.href) ? "bg-brand-primary/10 text-brand-primary" : "hover:bg-brand-surface2"}`}>{item.label}</Link>)}
+            </nav>
+          ) : null}
         </div>
       </div>
 

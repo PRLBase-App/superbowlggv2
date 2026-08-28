@@ -45,7 +45,7 @@ export default async function UserPredictionsPage({ params }: { params: Promise<
               <p className="mt-2 font-semibold text-brand-text">
                 {prediction.marketType.replace("_", " ")} · {prediction.selection}{prediction.line != null ? ` ${prediction.line > 0 ? "+" : ""}${prediction.line}` : ""}
               </p>
-              <p className="mt-1 text-xs text-brand-muted">Decimal odds {prediction.oddsAtCreation.toFixed(2)} · {timeAgo(prediction.publishedAt)}</p>
+              <p className="mt-1 text-xs text-brand-muted">{prediction.oddsAtCreation == null ? "Community line · no sportsbook odds" : `Decimal odds ${prediction.oddsAtCreation.toFixed(2)}`} · {timeAgo(prediction.publishedAt)}</p>
             </Link>
           ))}
         </div>

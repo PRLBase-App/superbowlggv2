@@ -65,7 +65,7 @@ export default async function PredictionsPage({ searchParams }: { searchParams: 
               </p>
               {p.analysis ? <p className="mt-1 line-clamp-2 text-xs text-brand-muted">{p.analysis}</p> : null}
               <div className="mt-3 flex items-center justify-between border-t border-brand-border pt-2 text-xs text-brand-muted">
-                <span className="scoreboard-num text-brand-primary">{p.oddsAtCreation}</span>
+                <span className="text-xs font-semibold text-brand-primary">{p.oddsAtCreation == null ? "Community line" : p.oddsAtCreation}</span>
                 <span>{p.confidence} · {timeAgo(p.publishedAt)}</span>
               </div>
             </Link>

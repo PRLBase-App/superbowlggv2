@@ -199,7 +199,7 @@ export async function getLeaderboard(period: "weekly" | "monthly" | "season" | "
       const wins = settled.filter((p) => p.result === "WIN").length;
       const losses = settled.filter((p) => p.result === "LOSS").length;
       const pushes = settled.filter((p) => p.result === "PUSH").length;
-      const units = settled.reduce((acc, p) => acc + (p.result === "WIN" ? p.oddsAtCreation - 1 : p.result === "LOSS" ? -1 : 0), 0);
+      const units = settled.reduce((acc, p) => acc + (p.oddsAtCreation == null ? 0 : p.result === "WIN" ? p.oddsAtCreation - 1 : p.result === "LOSS" ? -1 : 0), 0);
       const accuracy = settled.length ? wins / settled.length : 0;
       const roi = settled.length ? units / settled.length : 0;
       const points = Math.round(wins * 100 + units * 10);

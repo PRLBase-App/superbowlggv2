@@ -102,11 +102,7 @@ export async function redeemMarketplaceOffer(userId: string, offerSlug: string):
   try {
     return await serializable(() => prisma.$transaction(async (tx) => {
       const offer = await tx.marketplaceOffer.findUnique({ where: { slug: offerSlug } });
-      const now = new Date();
-      if (!offer || offer.status !== "ACTIVE") return { ok: false, error: "Offer not available" };
-      if ((offer.startAt && offer.startAt > now) || (offer.endAt && offer.endAt < now)) return { ok: false, error: "Offer not available" };
-      if (!offer.promoCode && !offer.destinationUrl) return { ok: false, error: "Offer fulfillment is not configured" };
-
+      if (!offer) return { ok: false, error: "Offer not available" };
       const prior = await tx.marketplaceRedemption.findUnique({ where: { userId_offerId: { userId, offerId: offer.id } } });
       if (prior) {
         return {
@@ -116,6 +112,10 @@ export async function redeemMarketplaceOffer(userId: string, offerSlug: string):
           duplicate: true,
         };
       }
+      const now = new Date();
+      if (offer.status !== "ACTIVE") return { ok: false, error: "Offer not available" };
+      if ((offer.startAt && offer.startAt > now) || (offer.endAt && offer.endAt < now)) return { ok: false, error: "Offer not available" };
+      if (!offer.promoCode && !offer.destinationUrl) return { ok: false, error: "Offer fulfillment is not configured" };
       const wallet = await tx.wallet.findUnique({ where: { userId } });
       if (!wallet || wallet.balance < offer.coinPrice) return { ok: false, error: "Not enough coins" };
       if (offer.inventory != null) {
@@ -155,6 +155,16 @@ export async function redeemMarketplaceOffer(userId: string, offerSlug: string):
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }));
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const prior = await prisma.marketplaceRedemption.findFirst({
+        where: { userId, offer: { slug: offerSlug } },
+        include: { offer: true },
+      });
+      if (prior) return {
+        ok: true,
+        promoCode: prior.promoCode ?? undefined,
+        destinationUrl: prior.offer.destinationUrl ?? undefined,
+        duplicate: true,
+      };
       return { ok: false, error: "Offer was already redeemed" };
     }
     throw error;

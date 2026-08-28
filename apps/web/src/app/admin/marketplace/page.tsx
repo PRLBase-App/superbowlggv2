@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui";
 import { AdminTableActions } from "@/components/admin-table-actions";
 import { AdminOfferForm } from "@/components/admin-offer-form";
 
-export const metadata: Metadata = { title: "Admin · Marketplace" };
+export const metadata: Metadata = { title: "Admin · Rewards Store" };
 
 export const revalidate = 15;
 
@@ -14,7 +14,7 @@ export default async function AdminMarketplacePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold text-brand-text">Marketplace</h1>
+      <h1 className="font-display text-2xl font-bold text-brand-text">Rewards Store</h1>
       <AdminOfferForm categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
       <div className="overflow-x-auto rounded-xl border border-brand-border">
         <table className="w-full text-sm">

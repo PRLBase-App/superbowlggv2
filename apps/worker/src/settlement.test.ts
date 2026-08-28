@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { needsSettlementRecovery } from "./settlement";
+import { computePredictionResult, needsSettlementRecovery } from "./settlement";
 
 const completed = {
   status: "SETTLED",
@@ -21,5 +21,16 @@ describe("settlement recovery selection", () => {
 
   it("always selects a newly locked prediction", () => {
     expect(needsSettlementRecovery({ ...completed, status: "LOCKED" })).toBe(true);
+  });
+});
+
+describe("community line settlement", () => {
+  it("settles half-step player lines without a synthetic push", () => {
+    expect(computePredictionResult({ marketType: "PLAYER_PROP", selection: "over", line: 249.5, homeScore: 0, awayScore: 0, playerPropValue: 250 })).toBe("WIN");
+    expect(computePredictionResult({ marketType: "PLAYER_PROP", selection: "under", line: 249.5, homeScore: 0, awayScore: 0, playerPropValue: 250 })).toBe("LOSS");
+  });
+
+  it("voids when the required official statistic is missing", () => {
+    expect(computePredictionResult({ marketType: "PLAYER_PROP", selection: "over", line: 0.5, homeScore: 0, awayScore: 0, playerPropValue: null })).toBe("VOID");
   });
 });

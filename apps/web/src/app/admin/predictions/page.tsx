@@ -40,7 +40,7 @@ export default async function AdminPredictionsPage() {
                     {p.status}{p.result ? ` · ${p.result}` : ""}
                   </Badge>
                 </td>
-                <td className="scoreboard-num px-4 py-2.5 text-right">{p.oddsAtCreation}</td>
+                <td className="scoreboard-num px-4 py-2.5 text-right">{p.oddsAtCreation ?? "Community"}</td>
                 <td className="px-4 py-2.5">
                   {p.status !== "VOIDED" ? (
                     <AdminTableActions actions={[{ label: "Void", action: "prediction.void", payload: { predictionId: p.id } }]} />

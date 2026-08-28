@@ -6,7 +6,7 @@ import { Clock3, LockKeyhole, RefreshCw, X } from "lucide-react";
 import { kickoffDisplay } from "@sbgg/core";
 import { Badge, TeamBadge } from "@/components/ui";
 import { PredictionComposer } from "@/components/prediction-builder";
-import type { PredictionOptionMarket, PredictionOptionsResult } from "@/lib/prediction-options";
+import type { PredictionMarketGroupKey, PredictionOptionsResult } from "@/lib/prediction-options";
 
 interface PickBoardGame {
   id: string;
@@ -19,17 +19,6 @@ interface PickBoardGame {
   options: PredictionOptionsResult;
 }
 
-function americanOdds(price: number): string {
-  return price >= 2 ? `+${Math.round((price - 1) * 100)}` : `${Math.round(-100 / (price - 1))}`;
-}
-
-function marketShortName(market: PredictionOptionMarket): string {
-  if (market.key === "h2h") return "Moneyline";
-  if (market.key === "spreads") return "Spread";
-  if (market.key === "totals") return "Total";
-  return market.name;
-}
-
 export function PickBoard({ games, authenticated, initialGameId, initialOutcomeId }: {
   games: PickBoardGame[];
   authenticated: boolean;
@@ -37,7 +26,7 @@ export function PickBoard({ games, authenticated, initialGameId, initialOutcomeI
   initialOutcomeId?: string;
 }) {
   const initialGame = games.find((game) => game.id === initialGameId);
-  const [selection, setSelection] = useState<{ game: PickBoardGame; outcomeId?: string } | null>(initialGame ? { game: initialGame, outcomeId: initialOutcomeId } : null);
+  const [selection, setSelection] = useState<{ game: PickBoardGame; outcomeId?: string; marketGroup?: PredictionMarketGroupKey | "COMMUNITY" } | null>(initialGame ? { game: initialGame, outcomeId: initialOutcomeId } : null);
   const closeButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -57,7 +46,14 @@ export function PickBoard({ games, authenticated, initialGameId, initialOutcomeI
     <>
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {games.map((game) => {
-          const visibleMarkets = game.options.markets.slice(0, 3);
+          const entries = [
+            ...game.options.groups.map((group) => ({
+              key: group.key,
+              label: group.label,
+              detail: `${new Set(group.markets.map(({ bookmakerKey }) => bookmakerKey)).size} bookmaker${new Set(group.markets.map(({ bookmakerKey }) => bookmakerKey)).size === 1 ? "" : "s"}`,
+            })),
+            ...(game.options.community.available ? [{ key: "COMMUNITY", label: "Community Line", detail: "No sportsbook odds" }] : []),
+          ];
           return (
             <article key={game.id} className="card overflow-hidden !p-0">
               <div className="flex items-center justify-between border-b border-brand-border px-4 py-3">
@@ -70,22 +66,17 @@ export function PickBoard({ games, authenticated, initialGameId, initialOutcomeI
                 <span className="text-center"><TeamBadge abbr={game.homeTeam.abbreviation} color={game.homeTeam.primaryColor} logoUrl={game.homeTeam.logoUrl} size="lg" /><span className="mt-2 block text-xs font-bold text-brand-text">{game.homeTeam.abbreviation}</span></span>
               </Link>
 
-              {visibleMarkets.length ? (
+              {entries.length ? (
                 <div className="space-y-3 border-t border-brand-border bg-brand-surface2/70 p-4">
-                  {visibleMarkets.map((market) => (
-                    <div key={market.id}>
-                      <div className="mb-1.5 flex items-center justify-between gap-2"><p className="text-[11px] font-bold uppercase tracking-[0.12em] text-brand-muted">{marketShortName(market)}</p><span className="text-[10px] text-brand-muted">{market.bookmaker}</span></div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {market.outcomes.slice(0, 2).map((outcome) => (
-                          <button key={outcome.id} type="button" onClick={() => setSelection({ game, outcomeId: outcome.id })} className="min-h-12 rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-left transition hover:border-brand-primary focus:border-brand-primary">
-                            <span className="block truncate text-xs font-semibold text-brand-text">{outcome.name}{outcome.point != null ? ` ${outcome.point > 0 ? "+" : ""}${outcome.point}` : ""}</span>
-                            <span className="scoreboard-num text-sm text-brand-primary">{americanOdds(outcome.price)}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  <button type="button" onClick={() => setSelection({ game })} className="btn-primary min-h-11 w-full">Make a pick</button>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-brand-muted">Choose a market</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {entries.map((entry) => (
+                      <button key={entry.key} type="button" onClick={() => setSelection({ game, marketGroup: entry.key as PredictionMarketGroupKey | "COMMUNITY" })} className="min-h-14 rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-left transition hover:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary">
+                        <span className="block text-xs font-semibold text-brand-text">{entry.label}</span>
+                        <span className="mt-1 block text-[10px] text-brand-muted">{entry.detail}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="border-t border-brand-border p-4">
@@ -107,11 +98,12 @@ export function PickBoard({ games, authenticated, initialGameId, initialOutcomeI
           <aside className="absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto rounded-t-[28px] border border-brand-border bg-brand-bg p-3 shadow-2xl lg:inset-y-0 lg:left-auto lg:w-[500px] lg:max-h-none lg:rounded-none lg:p-5">
             <button ref={closeButton} type="button" onClick={() => setSelection(null)} className="ml-auto flex h-11 w-11 items-center justify-center rounded-xl text-brand-muted hover:bg-brand-surface2 hover:text-brand-text" aria-label="Close prediction composer"><X className="h-5 w-5" /></button>
             <PredictionComposer
-              key={`${selection.game.id}:${selection.outcomeId ?? "none"}`}
+              key={`${selection.game.id}:${selection.outcomeId ?? "none"}:${selection.marketGroup ?? "default"}`}
               game={{ id: selection.game.id, awayAbbr: selection.game.awayTeam.abbreviation, homeAbbr: selection.game.homeTeam.abbreviation }}
-              markets={selection.game.options.markets}
+              options={selection.game.options}
               authenticated={authenticated}
               initialOutcomeId={selection.outcomeId}
+              initialMarketGroup={selection.marketGroup}
               onClose={() => setSelection(null)}
             />
           </aside>

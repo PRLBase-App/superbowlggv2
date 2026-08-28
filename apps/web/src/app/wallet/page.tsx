@@ -46,7 +46,7 @@ export default async function WalletPage() {
           <p className="text-xs uppercase tracking-wide text-brand-muted">Daily streak</p>
           <p className="scoreboard-num mt-1 text-4xl font-bold text-brand-text">{streak?.currentStreak ?? 0} <span className="text-lg text-brand-muted">days</span></p>
           <p className="mt-1 text-xs text-brand-muted">Longest: {streak?.longestStreak ?? 0} days</p>
-          {nextMilestone ? <p className="mt-2 text-xs text-brand-muted">Next milestone ({streak?.currentStreak ?? 0 + 1} days): +{nextMilestone} ◎</p> : null}
+          {nextMilestone ? <p className="mt-2 text-xs text-brand-muted">Next milestone ({(streak?.currentStreak ?? 0) + 1} days): +{nextMilestone} ◎</p> : null}
           <div className="mt-3 flex items-center justify-between rounded-lg border border-brand-border bg-brand-surface2 p-2.5 text-xs">
             <span className="text-brand-muted">Level</span>
             <span className="font-semibold text-brand-primary">{level.title} · Lv {level.level}</span>
@@ -91,7 +91,7 @@ export default async function WalletPage() {
       <div className="flex flex-wrap gap-4 text-sm">
         <Link href="/achievements" className="text-brand-primary hover:underline">Achievements ({achievements})</Link>
         <Link href="/referrals" className="text-brand-primary hover:underline">Referral program</Link>
-        <Link href="/marketplace" className="text-brand-primary hover:underline">Spend coins in the marketplace →</Link>
+        <Link href="/marketplace" className="text-brand-primary hover:underline">Spend coins in the Rewards Store →</Link>
       </div>
     </div>
   );
