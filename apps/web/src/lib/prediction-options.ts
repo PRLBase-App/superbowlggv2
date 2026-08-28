@@ -39,6 +39,22 @@ export interface PredictionOptionsResult {
   refreshedAt: string;
 }
 
+/** Keep an immediately actionable game above the fold during schedule windows
+ * where nearer games do not have supported provider markets (for example, the
+ * transition from preseason to the regular season). Remaining games preserve
+ * their existing chronological order.
+ */
+export function prioritizePickBoardGames<T extends { options: { availability: PredictionAvailability } }>(
+  games: T[],
+  limit: number,
+): T[] {
+  if (limit <= 0) return [];
+  return [
+    ...games.filter((game) => game.options.availability === "AVAILABLE"),
+    ...games.filter((game) => game.options.availability !== "AVAILABLE"),
+  ].slice(0, limit);
+}
+
 interface OptionGame {
   id: string;
   scheduledAt: Date;

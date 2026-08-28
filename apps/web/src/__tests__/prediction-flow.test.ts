@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPredictionOptions, isFreshOdds } from "@/lib/prediction-options";
+import { buildPredictionOptions, isFreshOdds, prioritizePickBoardGames } from "@/lib/prediction-options";
 import { publicationDecision } from "@/lib/prediction-publication";
 import { safeReturnTo } from "@/lib/return-url";
 import { themePreferenceSchema } from "@/lib/theme";
@@ -69,6 +69,15 @@ describe("prediction option availability", () => {
     expect(isFreshOdds(new Date("2026-08-26T23:59:59.000Z"), now)).toBe(false);
     expect(isFreshOdds(new Date("2026-08-27T12:06:00.000Z"), now)).toBe(false);
     expect(buildPredictionOptions(game, snapshots(new Date("2026-08-26T23:00:00.000Z")), now).availability).toBe("STALE");
+  });
+
+  it("surfaces open picks before nearer games without markets", () => {
+    const games = [
+      { id: "next-closed", options: { availability: "UNAVAILABLE" as const } },
+      { id: "later-open", options: { availability: "AVAILABLE" as const } },
+      { id: "next-stale", options: { availability: "STALE" as const } },
+    ];
+    expect(prioritizePickBoardGames(games, 2).map(({ id }) => id)).toEqual(["later-open", "next-closed"]);
   });
 });
 

@@ -1,5 +1,5 @@
 import { prisma } from "@sbgg/db";
-import { buildPredictionOptions, type PredictionOptionsResult } from "./prediction-options";
+import { buildPredictionOptions, prioritizePickBoardGames, type PredictionOptionsResult } from "./prediction-options";
 import { currentNflSeasonYear } from "./season";
 
 const optionInclude = {
@@ -30,9 +30,11 @@ export async function getPickBoardGames(now = new Date(), limit = 12) {
     },
     include: optionInclude,
     orderBy: { scheduledAt: "asc" },
-    take: limit,
+    // Look beyond short stretches of unsupported games so a later open market
+    // can still be surfaced without hiding the next games entirely.
+    take: Math.max(limit * 4, 48),
   });
-  return games.map((game) => ({
+  const pickBoardGames = games.map((game) => ({
     id: game.id,
     week: game.week,
     seasonType: game.seasonType,
@@ -52,4 +54,5 @@ export async function getPickBoardGames(now = new Date(), limit = 12) {
     },
     options: buildPredictionOptions(game, game.odds, now),
   }));
+  return prioritizePickBoardGames(pickBoardGames, limit);
 }
