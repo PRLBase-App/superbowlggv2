@@ -1,0 +1,33 @@
+schema: 1
+project: superbowl-gg
+language: en
+repositories:
+  - name: application
+    path: /home/openclaw/projects/superbowl.gg
+kanban_board: superbowl-gg
+production:
+  domains:
+    - https://superbowl.gg
+  railway:
+    auth_status: authenticated
+    project_id: 658128fc-597e-4366-850f-3673fd1744a2
+    production_environment_id: fe2163bb-e8e6-4173-8393-9705212b086c
+    production_branch: main
+    services:
+      web: 078e3a9e-ccd1-4df5-b558-5fbc778d1373
+      worker: ebf1568b-28ec-4839-a959-ce2cfe65b767
+policies:
+  coding_profile: coder
+  review_profile: reviewer
+  research_profile: seo
+  monitoring_profile: devops
+  backlink_outreach_requires_approval: true
+  production_backup_and_rollback_required: true
+marketing:
+  publisher: zernio
+  status: credentials-required
+  x_posts_per_day: 3
+  autopublish: true
+budgets_eur_monthly:
+  ai_global_hard_cap: 10
+  social_global_hard_cap: 50
