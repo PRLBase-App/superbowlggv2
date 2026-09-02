@@ -9,6 +9,7 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:visual": "node ../../scripts/hermes-visual.mjs",
     "seo:research": "tsx src/scripts/seo-research.ts",
     "seo:import-rankings": "tsx src/scripts/seo-import-rankings.ts"
   },

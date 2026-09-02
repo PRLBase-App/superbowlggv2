@@ -11,11 +11,11 @@ const optionalEmail = z.preprocess(emptyToUndefined, z.string().email().optional
  */
 const serverEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: z.string().min(1).default("postgresql://build:build@127.0.0.1:5432/build"),
   REDIS_URL: optionalString,
-  APP_URL: z.string().url().default("http://localhost:3000"),
-  AUTH_SECRET: z.string().min(32),
-  AUTH_BETTER_SECRET: z.string().min(32),
+  APP_URL: z.string().url().default("https://superbowl.gg"),
+  AUTH_SECRET: z.string().min(32).default("build-only-secret-00000000000000000000000000000000"),
+  AUTH_BETTER_SECRET: z.string().min(32).default("build-only-better-secret-000000000000000000000000"),
   EMAIL_FROM: z.string().min(3).default("Superbowl <noreply@superbowl.gg>"),
   RESEND_API_KEY: optionalString,
   GOOGLE_ANALYTICS_ID: z.preprocess(emptyToUndefined, z.string().regex(/^G-[A-Z0-9]+$/).optional()),

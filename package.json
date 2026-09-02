@@ -11,6 +11,7 @@
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
     "test:unit": "pnpm -r test:unit",
+    "test:visual": "pnpm --filter @sbgg/web test:visual",
     "db:generate": "pnpm --filter @sbgg/db generate",
     "db:migrate": "pnpm --filter @sbgg/db migrate",
     "db:seed": "pnpm --filter @sbgg/db seed",
